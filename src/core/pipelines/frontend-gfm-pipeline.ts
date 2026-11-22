@@ -3,7 +3,7 @@ import { AnimatedDOMTarget } from "../../targets/animated-dom-target";
 import { DOMTarget } from "../../targets/dom-target";
 import { DOMDocumentLike, DOMNodeLike, RAF } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
-import { createPipelineEngine } from "./pipeline-engine";
+import { createMarkdownPipeline } from "./markdown-pipeline";
 
 /**
  * Create a GFM pipeline that renders into a live page.
@@ -48,7 +48,7 @@ export class FrontendGFMPipeline implements MarkdownPipeline {
    * @param raf - Optional frame scheduler for batched DOM writes.
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions, raf?: RAF) {
-    this._engine = createPipelineEngine(
+    this._engine = createMarkdownPipeline(
       new GFMRenderer(
         raf === undefined ? new DOMTarget(target) : new AnimatedDOMTarget(target, raf),
         dom,

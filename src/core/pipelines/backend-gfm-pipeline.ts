@@ -2,7 +2,7 @@ import { GFMRenderer, GFMRenderOptions } from "../../renderers/gfm";
 import { DOMTarget } from "../../targets/dom-target";
 import { DOMDocumentLike, DOMNodeLike } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
-import { createPipelineEngine } from "./pipeline-engine";
+import { createMarkdownPipeline } from "./markdown-pipeline";
 
 /**
  * Create a GFM pipeline for server-side rendering.
@@ -46,7 +46,7 @@ export class BackendGFMPipeline implements MarkdownPipeline {
    * @param opts - GFM rendering options.
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions) {
-    this._engine = createPipelineEngine(new GFMRenderer(new DOMTarget(target), dom, opts));
+    this._engine = createMarkdownPipeline(new GFMRenderer(new DOMTarget(target), dom, opts));
   }
 
   /**

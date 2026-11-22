@@ -2,7 +2,7 @@ import { CommonMarkRenderer, CommonMarkRenderOptions } from "../../renderers/com
 import { DOMTarget } from "../../targets/dom-target";
 import { DOMDocumentLike, DOMNodeLike } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
-import { createPipelineEngine } from "./pipeline-engine";
+import { createMarkdownPipeline } from "./markdown-pipeline";
 
 /**
  * Create a CommonMark pipeline for server-side rendering.
@@ -46,7 +46,7 @@ export class BackendCommonMarkPipeline implements MarkdownPipeline {
    * @param opts - CommonMark rendering options.
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions) {
-    this._engine = createPipelineEngine(new CommonMarkRenderer(new DOMTarget(target), dom, opts));
+    this._engine = createMarkdownPipeline(new CommonMarkRenderer(new DOMTarget(target), dom, opts));
   }
 
   /**

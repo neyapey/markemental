@@ -5,6 +5,7 @@
  */
 
 export type { MarkdownPipeline } from "./core/types/pipeline";
+export { createMarkdownPipeline } from "./core/pipelines/markdown-pipeline";
 export type { MarkdownRenderer } from "./core/types/renderer";
 export type { RenderTarget } from "./core/types/target";
 export type { DOMDocumentLike, DOMNodeLike, RAF } from "./core/types/dom-like";

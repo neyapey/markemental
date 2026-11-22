@@ -3,13 +3,29 @@ import { MarkdownRenderer } from "../types/renderer";
 import { createLineSource } from "../../sources/line-source";
 
 /**
- * Shared push/flush engine wiring a line source to a renderer. Used by every
- * pipeline; not part of the public API.
+ * Create a pipeline around any renderer.
+ *
+ * @remarks
+ * The pipeline feeds the renderer one line at a time from whatever chunks
+ * are pushed; the renderer owns its target, document, and parse state. Pass
+ * a built-in renderer (`GFMRenderer`, `CommonMarkRenderer`) or your own
+ * `MarkdownRenderer` implementation.
  *
  * @param renderer - Line-consuming renderer holding its own target and state.
  * @returns A working pipeline.
+ *
+ * @example
+ * ```ts
+ * const pipeline = createMarkdownPipeline(
+ *   new GFMRenderer(new DOMTarget(target), document, {}),
+ * );
+ * await pipeline.push("# Hello\n");
+ * await pipeline.flush();
+ * ```
+ *
+ * @public
  */
-export function createPipelineEngine(renderer: MarkdownRenderer): MarkdownPipeline {
+export function createMarkdownPipeline(renderer: MarkdownRenderer): MarkdownPipeline {
   const source = createLineSource();
 
   function feed(lines: string[]): void {
