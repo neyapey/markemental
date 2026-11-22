@@ -1,3 +1,9 @@
+/**
+ * Incremental modular markdown renderer.
+ *
+ * @packageDocumentation
+ */
+
 export type { MarkdownPipeline } from "./core/types/pipeline";
 export type { MarkdownRenderer } from "./core/types/renderer";
 export type { LineSource } from "./core/types/source";

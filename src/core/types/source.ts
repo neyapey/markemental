@@ -1,5 +1,7 @@
 /**
- * a generator to iterate over. emits lines one line at a time
+ * A generator to iterate over. Emits lines one line at a time.
+ *
+ * @public
  */
 export interface LineSource {
 
