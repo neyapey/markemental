@@ -49,6 +49,7 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "linkedom": "^0.18.15",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
