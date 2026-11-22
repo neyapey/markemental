@@ -1,6 +1,8 @@
 import { GFMRenderer, GFMRenderOptions } from "../../renderers/gfm";
+import { DOMTarget } from "../../targets/dom-target";
 import { DOMDocumentLike, DOMNodeLike } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
+import { createPipelineEngine } from "./pipeline-engine";
 
 /**
  * Create a GFM pipeline for server-side rendering.
@@ -27,7 +29,7 @@ import { MarkdownPipeline } from "../types/pipeline"
  * @public
  */
 export function createBackendGFMPipeline(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions): MarkdownPipeline {
-  return new BackendGFMPipeline(opts);
+  return new BackendGFMPipeline(target, dom, opts);
 }
 
 /**
@@ -36,13 +38,15 @@ export function createBackendGFMPipeline(target: DOMNodeLike, dom: DOMDocumentLi
  * @public
  */
 export class BackendGFMPipeline implements MarkdownPipeline {
-  private _renderer: GFMRenderer
+  private _engine: MarkdownPipeline;
 
   /**
+   * @param target - Container node receiving rendered blocks.
+   * @param dom - Document used to create nodes.
    * @param opts - GFM rendering options.
    */
-  constructor(opts: GFMRenderOptions) {
-    this._renderer = new GFMRenderer(opts)
+  constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions) {
+    this._engine = createPipelineEngine(new GFMRenderer(opts), new DOMTarget(target), dom);
   }
 
   /**
@@ -51,9 +55,8 @@ export class BackendGFMPipeline implements MarkdownPipeline {
    * @param chunk - Markdown text, or a promise resolving to markdown text.
    * @returns A promise that resolves once the chunk has been consumed.
    */
-  async push(chunk: string | Promise<string>): Promise<void> {
-    void chunk;
-    throw new Error("not implemented");
+  push(chunk: string | Promise<string>): Promise<void> {
+    return this._engine.push(chunk);
   }
 
   /**
@@ -61,7 +64,7 @@ export class BackendGFMPipeline implements MarkdownPipeline {
    *
    * @returns A promise that resolves once all output has been flushed.
    */
-  async flush(): Promise<void> {
-    throw new Error("not implemented");
+  flush(): Promise<void> {
+    return this._engine.flush();
   }
 }

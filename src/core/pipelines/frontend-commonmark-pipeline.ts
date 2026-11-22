@@ -1,6 +1,9 @@
 import { CommonMarkRenderer, CommonMarkRenderOptions } from "../../renderers/commonmark";
+import { AnimatedDOMTarget } from "../../targets/animated-dom-target";
+import { DOMTarget } from "../../targets/dom-target";
 import { DOMDocumentLike, DOMNodeLike, RAF } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
+import { createPipelineEngine } from "./pipeline-engine";
 
 /**
  * Create a CommonMark pipeline that renders into a live page.
@@ -27,7 +30,7 @@ import { MarkdownPipeline } from "../types/pipeline"
  * @public
  */
 export function createFrontendCommonMarkPipeline(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions, raf?: RAF): MarkdownPipeline {
-  return new FrontendCommonMarkPipeline(opts);
+  return new FrontendCommonMarkPipeline(target, dom, opts, raf);
 }
 
 /**
@@ -36,13 +39,20 @@ export function createFrontendCommonMarkPipeline(target: DOMNodeLike, dom: DOMDo
  * @public
  */
 export class FrontendCommonMarkPipeline implements MarkdownPipeline {
-  private _renderer: CommonMarkRenderer
+  private _engine: MarkdownPipeline;
 
   /**
+   * @param target - Container node receiving rendered blocks.
+   * @param dom - Document used to create nodes.
    * @param opts - CommonMark rendering options.
+   * @param raf - Optional frame scheduler for batched DOM writes.
    */
-  constructor(opts: CommonMarkRenderOptions) {
-    this._renderer = new CommonMarkRenderer(opts)
+  constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions, raf?: RAF) {
+    this._engine = createPipelineEngine(
+      new CommonMarkRenderer(opts),
+      raf === undefined ? new DOMTarget(target) : new AnimatedDOMTarget(target, raf),
+      dom,
+    );
   }
 
   /**
@@ -51,9 +61,8 @@ export class FrontendCommonMarkPipeline implements MarkdownPipeline {
    * @param chunk - Markdown text, or a promise resolving to markdown text.
    * @returns A promise that resolves once the chunk has been consumed.
    */
-  async push(chunk: string | Promise<string>): Promise<void> {
-    void chunk;
-    throw new Error("not implemented");
+  push(chunk: string | Promise<string>): Promise<void> {
+    return this._engine.push(chunk);
   }
 
   /**
@@ -61,7 +70,7 @@ export class FrontendCommonMarkPipeline implements MarkdownPipeline {
    *
    * @returns A promise that resolves once all output has been flushed.
    */
-  async flush(): Promise<void> {
-    throw new Error("not implemented");
+  flush(): Promise<void> {
+    return this._engine.flush();
   }
 }

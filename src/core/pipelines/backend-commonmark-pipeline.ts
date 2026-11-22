@@ -1,6 +1,8 @@
 import { CommonMarkRenderer, CommonMarkRenderOptions } from "../../renderers/commonmark";
+import { DOMTarget } from "../../targets/dom-target";
 import { DOMDocumentLike, DOMNodeLike } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
+import { createPipelineEngine } from "./pipeline-engine";
 
 /**
  * Create a CommonMark pipeline for server-side rendering.
@@ -27,7 +29,7 @@ import { MarkdownPipeline } from "../types/pipeline"
  * @public
  */
 export function createBackendCommonMarkPipeline(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions): MarkdownPipeline {
-  return new BackendCommonMarkPipeline(opts);
+  return new BackendCommonMarkPipeline(target, dom, opts);
 }
 
 /**
@@ -36,13 +38,15 @@ export function createBackendCommonMarkPipeline(target: DOMNodeLike, dom: DOMDoc
  * @public
  */
 export class BackendCommonMarkPipeline implements MarkdownPipeline {
-  private _renderer: CommonMarkRenderer
+  private _engine: MarkdownPipeline;
 
   /**
+   * @param target - Container node receiving rendered blocks.
+   * @param dom - Document used to create nodes.
    * @param opts - CommonMark rendering options.
    */
-  constructor(opts: CommonMarkRenderOptions) {
-    this._renderer = new CommonMarkRenderer(opts)
+  constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions) {
+    this._engine = createPipelineEngine(new CommonMarkRenderer(opts), new DOMTarget(target), dom);
   }
 
   /**
@@ -51,9 +55,8 @@ export class BackendCommonMarkPipeline implements MarkdownPipeline {
    * @param chunk - Markdown text, or a promise resolving to markdown text.
    * @returns A promise that resolves once the chunk has been consumed.
    */
-  async push(chunk: string | Promise<string>): Promise<void> {
-    void chunk;
-    throw new Error("not implemented");
+  push(chunk: string | Promise<string>): Promise<void> {
+    return this._engine.push(chunk);
   }
 
   /**
@@ -61,7 +64,7 @@ export class BackendCommonMarkPipeline implements MarkdownPipeline {
    *
    * @returns A promise that resolves once all output has been flushed.
    */
-  async flush(): Promise<void> {
-    throw new Error("not implemented");
+  flush(): Promise<void> {
+    return this._engine.flush();
   }
 }

@@ -4,6 +4,7 @@
  * @packageDocumentation
  */
 
+export type { Block, BlockKind } from "./core/types/block";
 export type { MarkdownPipeline } from "./core/types/pipeline";
 export type { MarkdownRenderer } from "./core/types/renderer";
 export type { LineSource } from "./core/types/source";
