@@ -38,9 +38,9 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
   readonly options: GFMRenderOptions;
 
   /**
-   * @param target - Destination for rendered output. Use an
-   * `AnimatedDOMTarget` with `requestAnimationFrame` to batch writes on
-   * animation frames, or a `DOMTarget` for synchronous writes.
+   * @param target - Destination for rendered output, from
+   * `createRenderTarget`. Pass `requestAnimationFrame` there to batch
+   * writes on animation frames, or nothing for synchronous writes.
    * @param doc - Document used to create nodes.
    * @param opts - GFM rendering options.
    */

@@ -15,5 +15,4 @@ export { createBackendGFMPipeline, BackendGFMPipeline } from "./core/pipelines/b
 export { createBackendCommonMarkPipeline, BackendCommonMarkPipeline } from "./core/pipelines/backend-commonmark-pipeline";
 export { GFMRenderer, type GFMRenderOptions } from "./renderers/gfm";
 export { CommonMarkRenderer, type CommonMarkRenderOptions } from "./renderers/commonmark";
-export { DOMTarget } from "./targets/dom-target";
-export { AnimatedDOMTarget } from "./targets/animated-dom-target";
+export { createRenderTarget } from "./targets/render-target";

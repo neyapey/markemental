@@ -9,7 +9,9 @@ import { RenderTarget } from "../core/types/target";
  * injected frame scheduler so streamed output lands once per frame instead
  * of once per chunk.
  *
- * @public
+ * Internal implementation behind `createRenderTarget`.
+ *
+ * @internal
  */
 export class AnimatedDOMTarget implements RenderTarget {
   private _targetNode: DOMNodeLike;

@@ -23,9 +23,9 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   private _state = new RendererState();
 
   /**
-   * @param target - Destination for rendered output. Use an
-   * `AnimatedDOMTarget` with `requestAnimationFrame` to batch writes on
-   * animation frames, or a `DOMTarget` for synchronous writes.
+   * @param target - Destination for rendered output, from
+   * `createRenderTarget`. Pass `requestAnimationFrame` there to batch
+   * writes on animation frames, or nothing for synchronous writes.
    * @param doc - Document used to create nodes.
    * @param opts - CommonMark rendering options.
    */

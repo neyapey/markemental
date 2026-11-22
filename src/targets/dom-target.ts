@@ -5,9 +5,10 @@ import { RenderTarget } from "../core/types/target";
  * Target that appends rendered nodes synchronously.
  *
  * @remarks
- * Wraps an externally provided container node from a real or simulated DOM.
+ * Internal implementation behind `createRenderTarget`. Wraps an externally
+ * provided container node from a real or simulated DOM.
  *
- * @public
+ * @internal
  */
 export class DOMTarget implements RenderTarget {
   private _targetNode: DOMNodeLike;

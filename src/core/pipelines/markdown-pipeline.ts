@@ -17,7 +17,7 @@ import { createLineSource } from "../../sources/line-source";
  * @example
  * ```ts
  * const pipeline = createMarkdownPipeline(
- *   new GFMRenderer(new DOMTarget(target), document, {}),
+ *   new GFMRenderer(createRenderTarget(target), document, {}),
  * );
  * await pipeline.push("# Hello\n");
  * await pipeline.flush();

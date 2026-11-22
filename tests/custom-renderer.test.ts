@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  AnimatedDOMTarget,
   createMarkdownPipeline,
-  DOMTarget,
+  createRenderTarget,
   type DOMDocumentLike,
   type DOMNodeLike,
   type MarkdownRenderer,
@@ -49,7 +48,7 @@ describe("user-provided renderer", () => {
   it("renders through createMarkdownPipeline with a DOM target", async () => {
     const { document, target, html } = makeTestDom();
     const pipeline = createMarkdownPipeline(
-      new LineParagraphRenderer(new DOMTarget(target), document),
+      new LineParagraphRenderer(createRenderTarget(target), document),
     );
     await pipeline.push("hello\nwor");
     expect(html()).toBe("<p>hello</p>");
@@ -62,7 +61,7 @@ describe("user-provided renderer", () => {
     const { document, target, html } = makeTestDom();
     const { raf, runFrames, pendingFrames } = makeTestRaf();
     const pipeline = createMarkdownPipeline(
-      new LineParagraphRenderer(new AnimatedDOMTarget(target, raf), document),
+      new LineParagraphRenderer(createRenderTarget(target, raf), document),
     );
     await pipeline.push("a\nb\n");
     expect(html()).toBe("");
