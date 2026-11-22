@@ -4,7 +4,6 @@
  * @packageDocumentation
  */
 
-export type { Block, BlockKind } from "./core/types/block";
 export type { MarkdownPipeline } from "./core/types/pipeline";
 export type { MarkdownRenderer } from "./core/types/renderer";
 export type { RenderTarget } from "./core/types/target";
@@ -15,6 +14,5 @@ export { createBackendGFMPipeline, BackendGFMPipeline } from "./core/pipelines/b
 export { createBackendCommonMarkPipeline, BackendCommonMarkPipeline } from "./core/pipelines/backend-commonmark-pipeline";
 export { GFMRenderer, type GFMRenderOptions } from "./renderers/gfm";
 export { CommonMarkRenderer, type CommonMarkRenderOptions } from "./renderers/commonmark";
-export { RendererState } from "./renderers/renderer-state";
 export { DOMTarget } from "./targets/dom-target";
 export { AnimatedDOMTarget } from "./targets/animated-dom-target";

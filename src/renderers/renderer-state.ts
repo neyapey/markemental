@@ -5,10 +5,12 @@ import { Block } from "../core/types/block";
  * Mutable parse state carried across `push` calls.
  *
  * @remarks
- * Holds buffered lines for the currently open block so a pipeline can render
- * complete blocks incrementally while holding back a trailing partial block.
+ * Internal helper owned by a renderer. It buffers lines for the currently
+ * open block so complete blocks can be emitted incrementally while a
+ * trailing partial block is held back. Each renderer owns its own state and
+ * may use a different one per flavor; it is never exposed to users.
  *
- * @public
+ * @internal
  */
 export class RendererState {
   private _pending: string[] = [];

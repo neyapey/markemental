@@ -1,7 +1,11 @@
 /**
  * Block-level markdown constructs recognized by the MVP parser.
  *
- * @public
+ * @remarks
+ * Internal to the built-in renderers: the public renderer interface consumes
+ * lines, and each renderer is free to parse them however it wants.
+ *
+ * @internal
  */
 export type BlockKind =
   | "heading"
@@ -15,7 +19,7 @@ export type BlockKind =
 /**
  * A parsed block of markdown lines.
  *
- * @public
+ * @internal
  */
 export interface Block {
   /** What kind of block this is. */
