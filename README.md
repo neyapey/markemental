@@ -1,5 +1,7 @@
 # markemental
 
+> **Note:** This project is still under active development. APIs may change between releases.
+
 Incremental modular markdown renderer. Push markdown in arbitrarily-sized chunks and complete blocks render to the target as they arrive, instead of waiting for the full document.
 
 Four pipelines cover the frontend/backend × GFM/CommonMark matrix. Rendering targets a minimal `DOMNodeLike` interface, so the same code drives a live page in the browser and lightweight DOMs like linkedom on the server.
