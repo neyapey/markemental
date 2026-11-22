@@ -16,7 +16,7 @@ import { appendInline } from "./util/inline";
  * @public
  */
 export class CommonMarkRenderer implements MarkdownRenderer {
-  /** Rendering options. */
+  /** Resolved rendering options (defaults applied). */
   readonly options: CommonMarkRenderOptions;
   private _target: RenderTarget;
   private _doc: DOMDocumentLike;
@@ -32,7 +32,7 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   constructor(target: RenderTarget, doc: DOMDocumentLike, opts: CommonMarkRenderOptions) {
     this._target = target;
     this._doc = doc;
-    this.options = opts;
+    this.options = { ...opts, escapeHTML: opts.escapeHTML ?? true };
   }
 
   /**
@@ -156,5 +156,14 @@ export class CommonMarkRenderer implements MarkdownRenderer {
  * @public
  */
 export type CommonMarkRenderOptions = {
-
+  /**
+   * Escape HTML in rendered output. Defaults to true.
+   *
+   * @remarks
+   * Plain text is escaped by construction (it is written through text
+   * nodes); this flag governs HTML-producing paths such as raw HTML blocks
+   * once supported. GFM forces it to false when a `sanitizer` is set,
+   * handing output safety to the sanitizer.
+   */
+  escapeHTML?: boolean;
 }

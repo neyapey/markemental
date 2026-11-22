@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCommonMarkPipeline } from "../src/index";
+import { CommonMarkRenderer, createCommonMarkPipeline, createRenderTarget } from "../src/index";
 import { makeTestDom } from "./helpers";
 
 async function render(markdown: string): Promise<string> {
@@ -102,5 +102,16 @@ describe("commonmark inlines", () => {
 describe("input tolerance", () => {
   it("handles CRLF line endings", async () => {
     await expect(render("# Hi\r\n\r\nx\r\n")).resolves.toBe("<h1>Hi</h1><p>x</p>");
+  });
+});
+
+describe("commonmark render options", () => {
+  it("defaults escapeHTML to true", () => {
+    const { document, target } = makeTestDom();
+    const renderTarget = createRenderTarget(target);
+    expect(new CommonMarkRenderer(renderTarget, document, {}).options.escapeHTML).toBe(true);
+    expect(
+      new CommonMarkRenderer(renderTarget, document, { escapeHTML: false }).options.escapeHTML,
+    ).toBe(false);
   });
 });

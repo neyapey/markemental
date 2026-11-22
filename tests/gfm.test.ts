@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createCommonMarkPipeline, createGFMPipeline } from "../src/index";
+import {
+  createCommonMarkPipeline,
+  createGFMPipeline,
+  createRenderTarget,
+  GFMRenderer,
+  type BlockSanitizer,
+} from "../src/index";
 import { makeTestDom } from "./helpers";
 
 async function renderGfm(markdown: string): Promise<string> {
@@ -67,5 +73,45 @@ describe("gfm graceful degradation", () => {
     await expect(renderGfm("# Hi\n\n- a\n- b\n")).resolves.toBe(
       "<h1>Hi</h1><ul><li>a</li><li>b</li></ul>",
     );
+  });
+});
+
+describe("gfm sanitizer", () => {
+  it("passes every rendered block node through the sanitizer", async () => {
+    const { document, target, html } = makeTestDom();
+    const seen: Array<string | null> = [];
+    const sanitizer: BlockSanitizer = (node) => {
+      seen.push(node.textContent);
+      return node;
+    };
+    const pipeline = createGFMPipeline(target, document, { sanitizer });
+    await pipeline.push("# a\n\nb\n");
+    await pipeline.flush();
+    expect(seen).toEqual(["a", "b"]);
+    expect(html()).toBe("<h1>a</h1><p>b</p>");
+  });
+
+  it("appends the node returned by the sanitizer", async () => {
+    const { document, target, html } = makeTestDom();
+    const pipeline = createGFMPipeline(target, document, {
+      sanitizer: () => document.createTextNode("[redacted]"),
+    });
+    await pipeline.push("# a\n\nb\n");
+    await pipeline.flush();
+    expect(html()).toBe("[redacted][redacted]");
+  });
+});
+
+describe("gfm render options", () => {
+  it("defaults escapeHTML to true and forces it false with a sanitizer", () => {
+    const { document, target } = makeTestDom();
+    const renderTarget = createRenderTarget(target);
+    expect(new GFMRenderer(renderTarget, document, {}).options.escapeHTML).toBe(true);
+    expect(
+      new GFMRenderer(renderTarget, document, { escapeHTML: false }).options.escapeHTML,
+    ).toBe(false);
+    expect(
+      new GFMRenderer(renderTarget, document, { sanitizer: (node) => node }).options.escapeHTML,
+    ).toBe(false);
   });
 });
