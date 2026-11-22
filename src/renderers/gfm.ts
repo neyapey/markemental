@@ -1,6 +1,7 @@
 import { Block } from "../core/types/block";
 import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
+import { RenderTarget } from "../core/types/target";
 import { CommonMarkRenderer } from "./commonmark";
 import { appendInline } from "./util/inline";
 
@@ -32,15 +33,19 @@ function parseAlignment(cell: string): Alignment {
  *
  * @public
  */
-export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer<GFMRenderOptions> {
+export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer {
   /** Rendering options. */
   readonly options: GFMRenderOptions;
 
   /**
+   * @param target - Destination for rendered output. Use an
+   * `AnimatedDOMTarget` with `requestAnimationFrame` to batch writes on
+   * animation frames, or a `DOMTarget` for synchronous writes.
+   * @param doc - Document used to create nodes.
    * @param opts - GFM rendering options.
    */
-  constructor(opts: GFMRenderOptions) {
-    super({});
+  constructor(target: RenderTarget, doc: DOMDocumentLike, opts: GFMRenderOptions) {
+    super(target, doc, {});
     this.options = opts;
   }
 
@@ -60,7 +65,7 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer<
    * @param doc - Document used to create nodes.
    * @returns The rendered node, or `null` to emit nothing.
    */
-  override renderBlock(block: Block, doc: DOMDocumentLike): DOMNodeLike | null {
+  protected override renderBlock(block: Block, doc: DOMDocumentLike): DOMNodeLike | null {
     if (block.kind !== "table") return super.renderBlock(block, doc);
     const rows = block.lines.map(splitRow);
     const header = rows[0] ?? [];

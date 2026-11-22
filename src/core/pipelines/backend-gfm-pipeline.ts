@@ -46,7 +46,7 @@ export class BackendGFMPipeline implements MarkdownPipeline {
    * @param opts - GFM rendering options.
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions) {
-    this._engine = createPipelineEngine(new GFMRenderer(opts), new DOMTarget(target), dom);
+    this._engine = createPipelineEngine(new GFMRenderer(new DOMTarget(target), dom, opts));
   }
 
   /**

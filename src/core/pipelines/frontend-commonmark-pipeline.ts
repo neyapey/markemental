@@ -49,9 +49,11 @@ export class FrontendCommonMarkPipeline implements MarkdownPipeline {
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions, raf?: RAF) {
     this._engine = createPipelineEngine(
-      new CommonMarkRenderer(opts),
-      raf === undefined ? new DOMTarget(target) : new AnimatedDOMTarget(target, raf),
-      dom,
+      new CommonMarkRenderer(
+        raf === undefined ? new DOMTarget(target) : new AnimatedDOMTarget(target, raf),
+        dom,
+        opts,
+      ),
     );
   }
 

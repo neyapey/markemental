@@ -49,9 +49,11 @@ export class FrontendGFMPipeline implements MarkdownPipeline {
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions, raf?: RAF) {
     this._engine = createPipelineEngine(
-      new GFMRenderer(opts),
-      raf === undefined ? new DOMTarget(target) : new AnimatedDOMTarget(target, raf),
-      dom,
+      new GFMRenderer(
+        raf === undefined ? new DOMTarget(target) : new AnimatedDOMTarget(target, raf),
+        dom,
+        opts,
+      ),
     );
   }
 

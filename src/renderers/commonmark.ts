@@ -1,22 +1,65 @@
 import { Block } from "../core/types/block";
 import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
+import { RenderTarget } from "../core/types/target";
+import { RendererState } from "./renderer-state";
 import { appendInline } from "./util/inline";
 
 /**
  * Renderer for CommonMark.
  *
+ * @remarks
+ * Constructed with its target, document, and options. Feed it lines with
+ * {@link CommonMarkRenderer.writeLine}; it holds its own parse state and
+ * writes finished blocks to the target as they complete.
+ *
  * @public
  */
-export class CommonMarkRenderer implements MarkdownRenderer<CommonMarkRenderOptions> {
+export class CommonMarkRenderer implements MarkdownRenderer {
   /** Rendering options. */
   readonly options: CommonMarkRenderOptions;
+  private _target: RenderTarget;
+  private _doc: DOMDocumentLike;
+  private _state = new RendererState();
 
   /**
+   * @param target - Destination for rendered output. Use an
+   * `AnimatedDOMTarget` with `requestAnimationFrame` to batch writes on
+   * animation frames, or a `DOMTarget` for synchronous writes.
+   * @param doc - Document used to create nodes.
    * @param opts - CommonMark rendering options.
    */
-  constructor(opts: CommonMarkRenderOptions) {
+  constructor(target: RenderTarget, doc: DOMDocumentLike, opts: CommonMarkRenderOptions) {
+    this._target = target;
+    this._doc = doc;
     this.options = opts;
+  }
+
+  /**
+   * Feed one source line; completed blocks are written to the target.
+   *
+   * @param line - Next source line, without its line break.
+   */
+  writeLine(line: string): void {
+    this._state.addLines([line]);
+    this._drain(this._state.takeCompleteBlocks());
+  }
+
+  /**
+   * Render the buffered remainder and settle the target.
+   *
+   * @returns A promise that resolves once all output has landed in the target.
+   */
+  async flush(): Promise<void> {
+    this._drain(this._state.takeAllBlocks());
+    await this._target.flush();
+  }
+
+  private _drain(blocks: Block[]): void {
+    for (const block of blocks) {
+      const node = this.renderBlock(block, this._doc);
+      if (node !== null) this._target.append(node);
+    }
   }
 
   /**
@@ -36,7 +79,7 @@ export class CommonMarkRenderer implements MarkdownRenderer<CommonMarkRenderOpti
    * @param doc - Document used to create nodes.
    * @returns The rendered node, or `null` to emit nothing.
    */
-  renderBlock(block: Block, doc: DOMDocumentLike): DOMNodeLike | null {
+  protected renderBlock(block: Block, doc: DOMDocumentLike): DOMNodeLike | null {
     switch (block.kind) {
       case "heading": {
         const heading = doc.createElement(`h${block.level ?? 1}`);

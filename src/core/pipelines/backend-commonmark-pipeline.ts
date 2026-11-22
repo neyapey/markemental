@@ -46,7 +46,7 @@ export class BackendCommonMarkPipeline implements MarkdownPipeline {
    * @param opts - CommonMark rendering options.
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions) {
-    this._engine = createPipelineEngine(new CommonMarkRenderer(opts), new DOMTarget(target), dom);
+    this._engine = createPipelineEngine(new CommonMarkRenderer(new DOMTarget(target), dom, opts));
   }
 
   /**
