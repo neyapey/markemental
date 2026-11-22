@@ -1,16 +1,16 @@
 import { parseHTML } from "linkedom";
 import type { DOMDocumentLike, DOMNodeLike, RAF } from "../src/index";
 
-/** linkedom-backed DOM fixture. Casts are test-only: linkedom's own node
- * types satisfy the DOMNodeLike shape structurally at runtime. */
+/** linkedom-backed DOM fixture. linkedom's nodes satisfy the DOM-like
+ * interfaces with no adapter. */
 export function makeTestDom(): { document: DOMDocumentLike; target: DOMNodeLike; html: () => string } {
   const { document } = parseHTML("<div></div>");
   const target = document.querySelector("div");
   if (!target) throw new Error("test setup failed");
   return {
-    document: document as unknown as DOMDocumentLike,
-    target: target as unknown as DOMNodeLike,
-    html: () => (target as unknown as { innerHTML: string }).innerHTML,
+    document,
+    target,
+    html: () => target.innerHTML,
   };
 }
 
