@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createLineSource } from "../src/index";
+import { createLineSource } from "../src/sources/line-source";
 
 describe("line source", () => {
   it("splits lines across chunk boundaries", () => {

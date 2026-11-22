@@ -1,11 +1,14 @@
 import { LineSource } from "../core/types/source";
 
 /**
- * Create a line source that splits pushed text into lines.
+ * Create a line source that splits pushed chunks into lines.
+ *
+ * @remarks
+ * Internal helper used by the pipeline engine.
  *
  * @returns A new line source.
  *
- * @public
+ * @internal
  */
 export function createLineSource(): LineSource {
   let buffer = "";
