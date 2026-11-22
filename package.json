@@ -1,0 +1,59 @@
+{
+  "name": "markemental",
+  "version": "0.1.0",
+  "description": "Incremental modular markdown renderer",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run build && npm run test",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "markdown",
+    "incremental",
+    "streaming",
+    "renderer",
+    "gfm",
+    "commonmark"
+  ],
+  "author": "NeyaPey",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@git-neya:neyapey/markemental.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "allowScripts": {
+    "esbuild@0.27.7": true
+  }
+}

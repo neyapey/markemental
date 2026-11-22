@@ -1,2 +1,2 @@
 # markemental
-Incremental mardown parser that renders to plain html
+Incremental markdown renderer that renders to plain html
