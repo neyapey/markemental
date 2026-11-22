@@ -2,9 +2,10 @@
  * Incremental markdown rendering pipeline.
  *
  * @remarks
- * A pipeline accepts markdown in arbitrarily-sized chunks and renders complete
- * blocks to its target as they arrive. A trailing partial block is held back
- * until more input completes it or {@link MarkdownPipeline.flush} is called.
+ * A pipeline accepts markdown in arbitrarily-sized chunks from an external
+ * producer and renders complete blocks to its target as they arrive. A
+ * trailing partial block is held back until more input completes it or
+ * {@link MarkdownPipeline.flush} is called.
  *
  * @public
  */

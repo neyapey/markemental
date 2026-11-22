@@ -5,8 +5,9 @@ import { RenderTarget } from "../core/types/target";
  * Target that batches DOM writes on animation frames.
  *
  * @remarks
- * Uses requestAnimationFrame on the real DOM so streamed output lands once
- * per frame instead of once per chunk.
+ * Wraps an externally provided container node from a real DOM. Uses the
+ * injected frame scheduler so streamed output lands once per frame instead
+ * of once per chunk.
  *
  * @public
  */

@@ -2,8 +2,9 @@
  * Minimal subset of the DOM `Node` interface that markemental needs.
  *
  * @remarks
- * Both real DOM nodes and lightweight server-side implementations (for
- * example linkedom) satisfy this interface.
+ * These interfaces describe DOMs provided from outside the library: a real
+ * browser document, or a lightweight server-side implementation (for
+ * example linkedom). Both satisfy this interface.
  *
  * @public
  */

@@ -72,6 +72,20 @@ Pick a pipeline by environment and flavor:
 
 The trailing partial block is held back until more input completes it or `flush()` runs. Pushing after `flush()` throws. See the TSDoc on each factory for details.
 
+## Custom renderers
+
+Implement `MarkdownRenderer` to bring your own flavor or wrap a third-party parser, and compose it with any target through `createMarkdownPipeline`:
+
+```ts
+import { createMarkdownPipeline, DOMTarget } from "markemental";
+
+const pipeline = createMarkdownPipeline(
+  new MyRenderer(new DOMTarget(document.getElementById("out")!), document),
+);
+```
+
+The pipeline splits pushed chunks into lines and feeds them to the renderer one at a time; the renderer owns its target, document, and parse state. See the TSDoc on `createMarkdownPipeline` and `MarkdownRenderer` for details.
+
 ## MVP limitations
 
 Single-line list items, flat lists, single-paragraph quotes, and same-line code spans. No task lists, bare-URL autolinking, footnotes, or raw HTML passthrough yet.

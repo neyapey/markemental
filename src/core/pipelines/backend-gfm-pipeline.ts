@@ -11,7 +11,7 @@ import { createMarkdownPipeline } from "./markdown-pipeline";
  * Backend pipelines write synchronously and never schedule animation frames.
  * Pair with a lightweight `DOMDocumentLike` such as linkedom.
  *
- * @param target - Container node receiving rendered blocks.
+ * @param target - Container node receiving rendered output.
  * @param dom - Document used to create nodes.
  * @param opts - GFM rendering options.
  * @returns The configured pipeline.
@@ -41,7 +41,7 @@ export class BackendGFMPipeline implements MarkdownPipeline {
   private _engine: MarkdownPipeline;
 
   /**
-   * @param target - Container node receiving rendered blocks.
+   * @param target - Container node receiving rendered output.
    * @param dom - Document used to create nodes.
    * @param opts - GFM rendering options.
    */

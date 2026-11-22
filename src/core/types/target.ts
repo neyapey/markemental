@@ -4,9 +4,11 @@ import { DOMNodeLike } from "./dom-like";
  * Destination for rendered output.
  *
  * @remarks
- * A target receives rendered nodes from a pipeline and attaches them to the
- * host document. Targets decide when attachment happens: immediately, or
- * batched on animation frames for smooth streaming into a live page.
+ * A target receives rendered nodes from a renderer and attaches them to an
+ * external DOM: either a real browser document or a simulated one such as
+ * linkedom. The caller provides that DOM; the target only decides when
+ * attachment happens: immediately, or batched on animation frames for
+ * smooth streaming into a live page.
  *
  * @public
  */

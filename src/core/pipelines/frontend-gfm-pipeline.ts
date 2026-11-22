@@ -8,7 +8,7 @@ import { createMarkdownPipeline } from "./markdown-pipeline";
 /**
  * Create a GFM pipeline that renders into a live page.
  *
- * @param target - Container node receiving rendered blocks.
+ * @param target - Container node receiving rendered output.
  * @param dom - Document used to create nodes.
  * @param opts - GFM rendering options.
  * @param raf - Optional frame scheduler. When provided, DOM writes are
@@ -42,7 +42,7 @@ export class FrontendGFMPipeline implements MarkdownPipeline {
   private _engine: MarkdownPipeline;
 
   /**
-   * @param target - Container node receiving rendered blocks.
+   * @param target - Container node receiving rendered output.
    * @param dom - Document used to create nodes.
    * @param opts - GFM rendering options.
    * @param raf - Optional frame scheduler for batched DOM writes.
