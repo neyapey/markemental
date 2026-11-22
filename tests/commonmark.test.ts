@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createBackendCommonMarkPipeline } from "../src/index";
+import { createCommonMarkPipeline } from "../src/index";
 import { makeTestDom } from "./helpers";
 
 async function render(markdown: string): Promise<string> {
   const { document, target, html } = makeTestDom();
-  const pipeline = createBackendCommonMarkPipeline(target, document, {});
+  const pipeline = createCommonMarkPipeline(target, document, {});
   await pipeline.push(markdown);
   await pipeline.flush();
   return html();

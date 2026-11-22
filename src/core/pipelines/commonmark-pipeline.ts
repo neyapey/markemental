@@ -1,52 +1,60 @@
 import { CommonMarkRenderer, CommonMarkRenderOptions } from "../../renderers/commonmark";
-import { DOMTarget } from "../../targets/dom-target";
-import { DOMDocumentLike, DOMNodeLike } from "../types/dom-like";
+import { createRenderTarget } from "../../targets/render-target";
+import { DOMDocumentLike, DOMNodeLike, RAF } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
 import { createMarkdownPipeline } from "./markdown-pipeline";
 
 /**
- * Create a CommonMark pipeline for server-side rendering.
+ * Create a CommonMark pipeline rendering into the given container.
  *
  * @remarks
- * Backend pipelines write synchronously and never schedule animation frames.
- * Pair with a lightweight `DOMDocumentLike` such as linkedom.
+ * The environment is implicit: pass a real browser document for live pages
+ * or a simulated one such as linkedom for server-side rendering. Pass a
+ * frame scheduler to batch DOM writes on animation frames.
  *
  * @param target - Container node receiving rendered output.
  * @param dom - Document used to create nodes.
  * @param opts - CommonMark rendering options.
+ * @param raf - Optional frame scheduler. When provided, DOM writes are
+ * batched on animation frames for smooth streaming.
  * @returns The configured pipeline.
  *
  * @example
  * ```ts
- * import { parseHTML } from "linkedom";
- *
- * const { document } = parseHTML("<div></div>");
- * const pipeline = createBackendCommonMarkPipeline(document.querySelector("div"), document, {});
+ * const pipeline = createCommonMarkPipeline(
+ *   document.getElementById("out"),
+ *   document,
+ *   {},
+ *   requestAnimationFrame,
+ * );
  * await pipeline.push("# Hello\n");
  * await pipeline.flush();
  * ```
  *
  * @public
  */
-export function createBackendCommonMarkPipeline(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions): MarkdownPipeline {
-  return new BackendCommonMarkPipeline(target, dom, opts);
+export function createCommonMarkPipeline(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions, raf?: RAF): MarkdownPipeline {
+  return new CommonMarkPipeline(target, dom, opts, raf);
 }
 
 /**
- * Incremental CommonMark pipeline for server-side targets.
+ * Incremental CommonMark pipeline.
  *
  * @public
  */
-export class BackendCommonMarkPipeline implements MarkdownPipeline {
+export class CommonMarkPipeline implements MarkdownPipeline {
   private _engine: MarkdownPipeline;
 
   /**
    * @param target - Container node receiving rendered output.
    * @param dom - Document used to create nodes.
    * @param opts - CommonMark rendering options.
+   * @param raf - Optional frame scheduler for batched DOM writes.
    */
-  constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions) {
-    this._engine = createMarkdownPipeline(new CommonMarkRenderer(new DOMTarget(target), dom, opts));
+  constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: CommonMarkRenderOptions, raf?: RAF) {
+    this._engine = createMarkdownPipeline(
+      new CommonMarkRenderer(createRenderTarget(target, raf), dom, opts),
+    );
   }
 
   /**

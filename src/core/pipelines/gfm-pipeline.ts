@@ -1,12 +1,16 @@
 import { GFMRenderer, GFMRenderOptions } from "../../renderers/gfm";
-import { AnimatedDOMTarget } from "../../targets/animated-dom-target";
-import { DOMTarget } from "../../targets/dom-target";
+import { createRenderTarget } from "../../targets/render-target";
 import { DOMDocumentLike, DOMNodeLike, RAF } from "../types/dom-like";
 import { MarkdownPipeline } from "../types/pipeline"
 import { createMarkdownPipeline } from "./markdown-pipeline";
 
 /**
- * Create a GFM pipeline that renders into a live page.
+ * Create a GFM pipeline rendering into the given container.
+ *
+ * @remarks
+ * The environment is implicit: pass a real browser document for live pages
+ * or a simulated one such as linkedom for server-side rendering. Pass a
+ * frame scheduler to batch DOM writes on animation frames.
  *
  * @param target - Container node receiving rendered output.
  * @param dom - Document used to create nodes.
@@ -17,7 +21,7 @@ import { createMarkdownPipeline } from "./markdown-pipeline";
  *
  * @example
  * ```ts
- * const pipeline = createFrontendGFMPipeline(
+ * const pipeline = createGFMPipeline(
  *   document.getElementById("out"),
  *   document,
  *   {},
@@ -29,16 +33,16 @@ import { createMarkdownPipeline } from "./markdown-pipeline";
  *
  * @public
  */
-export function createFrontendGFMPipeline(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions, raf?: RAF): MarkdownPipeline {
-  return new FrontendGFMPipeline(target, dom, opts, raf);
+export function createGFMPipeline(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions, raf?: RAF): MarkdownPipeline {
+  return new GFMPipeline(target, dom, opts, raf);
 }
 
 /**
- * Incremental GFM pipeline for browser targets.
+ * Incremental GFM pipeline.
  *
  * @public
  */
-export class FrontendGFMPipeline implements MarkdownPipeline {
+export class GFMPipeline implements MarkdownPipeline {
   private _engine: MarkdownPipeline;
 
   /**
@@ -49,11 +53,7 @@ export class FrontendGFMPipeline implements MarkdownPipeline {
    */
   constructor(target: DOMNodeLike, dom: DOMDocumentLike, opts: GFMRenderOptions, raf?: RAF) {
     this._engine = createMarkdownPipeline(
-      new GFMRenderer(
-        raf === undefined ? new DOMTarget(target) : new AnimatedDOMTarget(target, raf),
-        dom,
-        opts,
-      ),
+      new GFMRenderer(createRenderTarget(target, raf), dom, opts),
     );
   }
 

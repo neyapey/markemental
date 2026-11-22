@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createBackendCommonMarkPipeline, createBackendGFMPipeline } from "../src/index";
+import { createCommonMarkPipeline, createGFMPipeline } from "../src/index";
 import { makeTestDom } from "./helpers";
 
 async function renderGfm(markdown: string): Promise<string> {
   const { document, target, html } = makeTestDom();
-  const pipeline = createBackendGFMPipeline(target, document, {});
+  const pipeline = createGFMPipeline(target, document, {});
   await pipeline.push(markdown);
   await pipeline.flush();
   return html();
@@ -46,7 +46,7 @@ describe("gfm strikethrough", () => {
 
   it("stays literal under CommonMark", async () => {
     const { document, target, html } = makeTestDom();
-    const pipeline = createBackendCommonMarkPipeline(target, document, {});
+    const pipeline = createCommonMarkPipeline(target, document, {});
     await pipeline.push("~~struck~~\n");
     await pipeline.flush();
     expect(html()).toBe("<p>~~struck~~</p>");
@@ -56,7 +56,7 @@ describe("gfm strikethrough", () => {
 describe("gfm graceful degradation", () => {
   it("renders tables as paragraphs under CommonMark", async () => {
     const { document, target, html } = makeTestDom();
-    const pipeline = createBackendCommonMarkPipeline(target, document, {});
+    const pipeline = createCommonMarkPipeline(target, document, {});
     await pipeline.push("| a | b |\n|---|---|\n| 1 | 2 |\n");
     await pipeline.flush();
     expect(html()).not.toContain("<table");
