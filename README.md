@@ -4,7 +4,7 @@
 
 Incremental modular markdown renderer. Push markdown in arbitrarily-sized chunks and complete blocks render to the target as they arrive, instead of waiting for the full document.
 
-Four pipelines cover the frontend/backend × GFM/CommonMark matrix. Rendering targets a minimal `DOMNodeLike` interface, so the same code drives a live page in the browser and lightweight DOMs like linkedom on the server.
+Two pipelines cover the GFM/CommonMark flavors, and the environment is implicit: the same code drives a live page in the browser and lightweight DOMs like linkedom on the server through a minimal `DOMNodeLike` interface.
 
 ## Features
 
@@ -12,7 +12,7 @@ Four pipelines cover the frontend/backend × GFM/CommonMark matrix. Rendering ta
 - Blocks: headings, paragraphs, fenced code, bullet and ordered lists, blockquotes, thematic breaks.
 - Inlines: emphasis, strong, inline code, links, images, autolinks, escapes, hard breaks.
 - GFM extras: tables (with column alignment) and strikethrough; CommonMark pipelines degrade tables to paragraphs.
-- Frontend pipelines batch DOM writes on `requestAnimationFrame` when given a scheduler.
+- Pipelines batch DOM writes on `requestAnimationFrame` when given a scheduler.
 
 ## Install
 
@@ -31,9 +31,9 @@ npm install linkedom
 Render a streamed response into a live page:
 
 ```ts
-import { createFrontendGFMPipeline } from "markemental";
+import { createGFMPipeline } from "markemental";
 
-const pipeline = createFrontendGFMPipeline(
+const pipeline = createGFMPipeline(
   document.getElementById("out")!,
   document,
   {},
@@ -50,25 +50,23 @@ Render on the server with linkedom:
 
 ```ts
 import { parseHTML } from "linkedom";
-import { createBackendGFMPipeline } from "markemental";
+import { createGFMPipeline } from "markemental";
 
 const { document } = parseHTML("<div></div>");
 const target = document.querySelector("div")!;
-const pipeline = createBackendGFMPipeline(target, document, {});
+const pipeline = createGFMPipeline(target, document, {});
 
 await pipeline.push("# Hello\n\nWorld\n");
 await pipeline.flush();
 console.log(target.innerHTML);
 ```
 
-Pick a pipeline by environment and flavor:
+Pick a pipeline by flavor:
 
-| Factory | Environment | Flavor |
-|---|---|---|
-| `createFrontendGFMPipeline` | browser | GFM |
-| `createFrontendCommonMarkPipeline` | browser | CommonMark |
-| `createBackendGFMPipeline` | server | GFM |
-| `createBackendCommonMarkPipeline` | server | CommonMark |
+| Factory | Flavor |
+|---|---|
+| `createGFMPipeline` | GFM |
+| `createCommonMarkPipeline` | CommonMark |
 
 The trailing partial block is held back until more input completes it or `flush()` runs. Pushing after `flush()` throws. See the TSDoc on each factory for details.
 
@@ -77,10 +75,10 @@ The trailing partial block is held back until more input completes it or `flush(
 Implement `MarkdownRenderer` to bring your own flavor or wrap a third-party parser, and compose it with any target through `createMarkdownPipeline`:
 
 ```ts
-import { createMarkdownPipeline, DOMTarget } from "markemental";
+import { createMarkdownPipeline, createRenderTarget } from "markemental";
 
 const pipeline = createMarkdownPipeline(
-  new MyRenderer(new DOMTarget(document.getElementById("out")!), document),
+  new MyRenderer(createRenderTarget(document.getElementById("out")!), document),
 );
 ```
 
