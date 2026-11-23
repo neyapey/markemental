@@ -30,13 +30,11 @@ function parseAlignment(cell: string): Alignment {
  *
  * @remarks
  * Supports CommonMark blocks and inlines plus GFM tables and strikethrough.
- * An optional `sanitizer` post-processes every rendered block node; when
- * set, `escapeHTML` is forced to false.
  *
  * @public
  */
 export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer {
-  /** Resolved rendering options (defaults applied). */
+  /** Rendering options. */
   readonly options: GFMRenderOptions;
 
   /**
@@ -47,9 +45,8 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
    * @param opts - GFM rendering options.
    */
   constructor(target: RenderTarget, doc: DOMDocumentLike, opts: GFMRenderOptions) {
-    const escapeHTML = opts.sanitizer === undefined ? (opts.escapeHTML ?? true) : false;
-    super(target, doc, { escapeHTML });
-    this.options = { ...opts, escapeHTML };
+    super(target, doc, opts);
+    this.options = opts;
   }
 
   /**
@@ -69,7 +66,7 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
    * @returns The rendered node, or `null` to emit nothing.
    */
   protected override renderBlock(block: Block, doc: DOMDocumentLike): DOMNodeLike | null {
-    if (block.kind !== "table") return this.sanitize(super.renderBlock(block, doc));
+    if (block.kind !== "table") return super.renderBlock(block, doc);
     const rows = block.lines.map(splitRow);
     const header = rows[0] ?? [];
     const alignments = (rows[1] ?? []).map(parseAlignment);
@@ -99,36 +96,13 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
       body.appendChild(bodyRow);
     }
     table.appendChild(body);
-    return this.sanitize(table);
-  }
-
-  private sanitize(node: DOMNodeLike | null): DOMNodeLike | null {
-    if (node === null) return null;
-    const sanitizer = this.options.sanitizer;
-    return sanitizer === undefined ? node : sanitizer(node);
+    return table;
   }
 }
-
-/**
- * Sanitizes one rendered block node.
- *
- * @param node - Rendered block node.
- * @returns The node to append to the target.
- *
- * @public
- */
-export type BlockSanitizer = (node: DOMNodeLike) => DOMNodeLike;
 
 /**
  * Options for {@link GFMRenderer}.
  *
  * @public
  */
-export type GFMRenderOptions = CommonMarkRenderOptions & {
-  /**
-   * Optional post-render sanitizer applied to every rendered block node.
-   * When set, `escapeHTML` is forced to false: the sanitizer owns output
-   * safety.
-   */
-  sanitizer?: BlockSanitizer;
-};
+export type GFMRenderOptions = CommonMarkRenderOptions;

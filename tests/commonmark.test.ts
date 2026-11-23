@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CommonMarkRenderer, createCommonMarkPipeline, createRenderTarget } from "../src/index";
+import { createCommonMarkPipeline } from "../src/index";
 import { makeTestDom } from "./helpers";
 
 async function render(markdown: string): Promise<string> {
@@ -105,13 +105,19 @@ describe("input tolerance", () => {
   });
 });
 
-describe("commonmark render options", () => {
-  it("defaults escapeHTML to true", () => {
-    const { document, target } = makeTestDom();
-    const renderTarget = createRenderTarget(target);
-    expect(new CommonMarkRenderer(renderTarget, document, {}).options.escapeHTML).toBe(true);
-    expect(
-      new CommonMarkRenderer(renderTarget, document, { escapeHTML: false }).options.escapeHTML,
-    ).toBe(false);
+describe("commonmark sanitizer", () => {
+  it("passes every rendered block node through the sanitizer", async () => {
+    const { document, target, html } = makeTestDom();
+    const seen: Array<string | null> = [];
+    const pipeline = createCommonMarkPipeline(target, document, {
+      sanitizer: (node) => {
+        seen.push(node.textContent);
+        return node;
+      },
+    });
+    await pipeline.push("# a\n\nb\n");
+    await pipeline.flush();
+    expect(seen).toEqual(["a", "b"]);
+    expect(html()).toBe("<h1>a</h1><p>b</p>");
   });
 });

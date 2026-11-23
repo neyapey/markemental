@@ -11,12 +11,13 @@ import { appendInline } from "./util/inline";
  * @remarks
  * Constructed with its target, document, and options. Feed it lines with
  * {@link CommonMarkRenderer.writeLine}; it holds its own parse state and
- * writes finished blocks to the target as they complete.
+ * writes finished blocks to the target as they complete. An optional
+ * `sanitizer` post-processes every rendered block node.
  *
  * @public
  */
 export class CommonMarkRenderer implements MarkdownRenderer {
-  /** Resolved rendering options (defaults applied). */
+  /** Rendering options. */
   readonly options: CommonMarkRenderOptions;
   private _target: RenderTarget;
   private _doc: DOMDocumentLike;
@@ -32,7 +33,7 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   constructor(target: RenderTarget, doc: DOMDocumentLike, opts: CommonMarkRenderOptions) {
     this._target = target;
     this._doc = doc;
-    this.options = { ...opts, escapeHTML: opts.escapeHTML ?? true };
+    this.options = opts;
   }
 
   /**
@@ -56,9 +57,11 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   }
 
   private _drain(blocks: Block[]): void {
+    const sanitizer = this.options.sanitizer;
     for (const block of blocks) {
       const node = this.renderBlock(block, this._doc);
-      if (node !== null) this._target.append(node);
+      if (node === null) continue;
+      this._target.append(sanitizer === undefined ? node : sanitizer(node));
     }
   }
 
@@ -151,19 +154,27 @@ export class CommonMarkRenderer implements MarkdownRenderer {
 }
 
 /**
+ * Sanitizes one rendered block node.
+ *
+ * @param node - Rendered block node.
+ * @returns The node to append to the target.
+ *
+ * @public
+ */
+export type BlockSanitizer = (node: DOMNodeLike) => DOMNodeLike;
+
+/**
  * Options for {@link CommonMarkRenderer}.
  *
  * @public
  */
 export type CommonMarkRenderOptions = {
   /**
-   * Escape HTML in rendered output. Defaults to true.
+   * Optional post-render sanitizer applied to every rendered block node.
    *
    * @remarks
-   * Plain text is escaped by construction (it is written through text
-   * nodes); this flag governs HTML-producing paths such as raw HTML blocks
-   * once supported. GFM forces it to false when a `sanitizer` is set,
-   * handing output safety to the sanitizer.
+   * Intended for HTML safety once raw HTML detection and parsing lands
+   * (see the TODO in `util/inline`).
    */
-  escapeHTML?: boolean;
-}
+  sanitizer?: BlockSanitizer;
+};

@@ -125,6 +125,8 @@ export function appendInline(parent: DOMNodeLike, text: string, doc: DOMDocument
       continue;
     }
     if (ch === "<") {
+      // TODO: detect and parse raw HTML (inline tags here, block-level tags
+      // in the block parser) instead of leaving non-autolinks literal.
       const end = text.indexOf(">", i + 1);
       if (end !== -1 && AUTOLINK_RE.test(text.slice(i + 1, end))) {
         flushLiteral();

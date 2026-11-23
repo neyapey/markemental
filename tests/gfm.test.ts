@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createCommonMarkPipeline,
-  createGFMPipeline,
-  createRenderTarget,
-  GFMRenderer,
-  type BlockSanitizer,
-} from "../src/index";
+import { createCommonMarkPipeline, createGFMPipeline, type BlockSanitizer } from "../src/index";
 import { makeTestDom } from "./helpers";
 
 async function renderGfm(markdown: string): Promise<string> {
@@ -100,18 +94,19 @@ describe("gfm sanitizer", () => {
     await pipeline.flush();
     expect(html()).toBe("[redacted][redacted]");
   });
-});
 
-describe("gfm render options", () => {
-  it("defaults escapeHTML to true and forces it false with a sanitizer", () => {
-    const { document, target } = makeTestDom();
-    const renderTarget = createRenderTarget(target);
-    expect(new GFMRenderer(renderTarget, document, {}).options.escapeHTML).toBe(true);
-    expect(
-      new GFMRenderer(renderTarget, document, { escapeHTML: false }).options.escapeHTML,
-    ).toBe(false);
-    expect(
-      new GFMRenderer(renderTarget, document, { sanitizer: (node) => node }).options.escapeHTML,
-    ).toBe(false);
+  it("sanitizes GFM tables", async () => {
+    const { document, target, html } = makeTestDom();
+    const seen: Array<string | null> = [];
+    const pipeline = createGFMPipeline(target, document, {
+      sanitizer: (node) => {
+        seen.push(node.textContent);
+        return node;
+      },
+    });
+    await pipeline.push("| a |\n|---|\n| 1 |\n");
+    await pipeline.flush();
+    expect(seen).toEqual(["a1"]);
+    expect(html()).toContain("<table>");
   });
 });

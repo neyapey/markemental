@@ -11,6 +11,6 @@ export type { RenderTarget } from "./core/types/target";
 export type { DOMDocumentLike, DOMNodeLike, RAF } from "./core/types/dom-like";
 export { createGFMPipeline, GFMPipeline } from "./core/pipelines/gfm-pipeline";
 export { createCommonMarkPipeline, CommonMarkPipeline } from "./core/pipelines/commonmark-pipeline";
-export { GFMRenderer, type BlockSanitizer, type GFMRenderOptions } from "./renderers/gfm";
-export { CommonMarkRenderer, type CommonMarkRenderOptions } from "./renderers/commonmark";
+export { GFMRenderer, type GFMRenderOptions } from "./renderers/gfm";
+export { CommonMarkRenderer, type BlockSanitizer, type CommonMarkRenderOptions } from "./renderers/commonmark";
 export { createRenderTarget } from "./targets/render-target";
