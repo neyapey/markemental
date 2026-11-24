@@ -1,4 +1,3 @@
-import { Block } from "../core/types/block";
 import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
 import { RenderTarget } from "../core/types/target";
@@ -30,12 +29,16 @@ function parseAlignment(cell: string): Alignment {
  *
  * @remarks
  * Supports CommonMark blocks and inlines plus GFM tables and strikethrough.
+ * Tables commit at the delimiter row and stream one row at a time; column
+ * widths come from the header row, short rows are padded, and extra cells
+ * on wide rows are kept as unaligned cells.
  *
  * @public
  */
 export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer {
   /** Rendering options. */
   readonly options: GFMRenderOptions;
+  private _table: { body: DOMNodeLike; aligns: Array<Alignment | null>; width: number } | null = null;
 
   /**
    * @param target - Destination for rendered output, from
@@ -59,44 +62,63 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
   }
 
   /**
-   * Render one block to a DOM-like node, handling GFM tables.
+   * Commit the table with its header; body rows stream in afterwards.
    *
-   * @param block - Parsed block to render.
-   * @param doc - Document used to create nodes.
-   * @returns The rendered node, or `null` to emit nothing.
+   * @param headLine - Raw header row line.
+   * @param delimLine - Delimiter row line carrying column alignment.
    */
-  protected override renderBlock(block: Block, doc: DOMDocumentLike): DOMNodeLike | null {
-    if (block.kind !== "table") return super.renderBlock(block, doc);
-    const rows = block.lines.map(splitRow);
-    const header = rows[0] ?? [];
-    const alignments = (rows[1] ?? []).map(parseAlignment);
-    const width = Math.max(header.length, ...rows.map((row) => row.length));
-    const table = doc.createElement("table");
-    const head = doc.createElement("thead");
-    const headRow = doc.createElement("tr");
+  protected override _applyTableHead(headLine: string, delimLine: string): void {
+    const header = splitRow(headLine);
+    const aligns = splitRow(delimLine).map(parseAlignment);
+    const width = header.length;
+    const table = this._doc.createElement("table");
+    const head = this._doc.createElement("thead");
+    const headRow = this._doc.createElement("tr");
     for (let col = 0; col < width; col++) {
-      const cell = doc.createElement("th");
-      const align = alignments[col] ?? null;
+      const cell = this._doc.createElement("th");
+      const align = aligns[col] ?? null;
       if (align !== null) cell.setAttribute?.("align", align);
-      appendInline(cell, header[col] ?? "", doc, true);
+      appendInline(cell, header[col] ?? "", this._doc, true);
       headRow.appendChild(cell);
     }
     head.appendChild(headRow);
     table.appendChild(head);
-    const body = doc.createElement("tbody");
-    for (const row of rows.slice(2)) {
-      const bodyRow = doc.createElement("tr");
-      for (let col = 0; col < width; col++) {
-        const cell = doc.createElement("td");
-        const align = alignments[col] ?? null;
-        if (align !== null) cell.setAttribute?.("align", align);
-        appendInline(cell, row[col] ?? "", doc, true);
-        bodyRow.appendChild(cell);
-      }
-      body.appendChild(bodyRow);
-    }
+    const body = this._doc.createElement("tbody");
     table.appendChild(body);
-    return table;
+    this._commit(table, null);
+    this._table = { body, aligns, width };
+  }
+
+  /**
+   * Append one body row to the open table.
+   *
+   * @param line - Raw body row line.
+   */
+  protected override _applyTableRow(line: string): void {
+    const table = this._table;
+    if (table === null) return;
+    const cells = splitRow(line);
+    const row = this._doc.createElement("tr");
+    for (let col = 0; col < table.width; col++) {
+      const cell = this._doc.createElement("td");
+      const align = table.aligns[col] ?? null;
+      if (align !== null) cell.setAttribute?.("align", align);
+      appendInline(cell, cells[col] ?? "", this._doc, true);
+      row.appendChild(cell);
+    }
+    for (let col = table.width; col < cells.length; col++) {
+      const cell = this._doc.createElement("td");
+      appendInline(cell, cells[col] as string, this._doc, true);
+      row.appendChild(cell);
+    }
+    this._commit(row, table.body);
+  }
+
+  /**
+   * Close the open table.
+   */
+  protected override _applyTableEnd(): void {
+    this._table = null;
   }
 }
 

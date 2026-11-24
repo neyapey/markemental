@@ -106,7 +106,7 @@ describe("gfm sanitizer", () => {
     });
     await pipeline.push("| a |\n|---|\n| 1 |\n");
     await pipeline.flush();
-    expect(seen).toEqual(["a1"]);
+    expect(seen).toEqual(["a", "1"]);
     expect(html()).toContain("<table>");
   });
 });

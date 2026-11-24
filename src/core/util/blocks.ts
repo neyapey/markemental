@@ -145,27 +145,6 @@ export function matchListItem(line: string): ListItemMatch | null {
 }
 
 /**
- * Whether a line continues a bullet list (a bullet marker that is not also
- * ordered-looking).
- *
- * @param line - Source line to test.
- * @returns True for bullet continuations.
- */
-export function isBulletItem(line: string): boolean {
-  return BULLET_RE.test(line) && !ORDERED_RE.test(line);
-}
-
-/**
- * Whether a line continues an ordered list.
- *
- * @param line - Source line to test.
- * @returns True for ordered markers.
- */
-export function isOrderedItem(line: string): boolean {
-  return ORDERED_RE.test(line);
-}
-
-/**
  * Whether a line is a table delimiter row.
  *
  * @param line - Source line to test.
@@ -200,7 +179,12 @@ function makeBlock(block: Omit<Block, "sourceLineCount">, sourceLineCount: numbe
 }
 
 /**
- * Split source lines into blocks.
+ * Split leaf-block lines into blocks.
+ *
+ * @remarks
+ * Tables and lists never reach this function: the render state diverts them
+ * into streaming fragments, so only headings, paragraphs, fences, quotes,
+ * and rules are split here.
  *
  * @param lines - Source lines without line breaks.
  * @returns Parsed blocks in document order.
@@ -238,17 +222,6 @@ export function splitBlocks(lines: string[]): Block[] {
       i++;
       continue;
     }
-    if (line.includes("|") && i + 1 < lines.length && isTableDelimiter(lines[i + 1] as string)) {
-      const rows = [line, lines[i + 1] as string];
-      let j = i + 2;
-      while (j < lines.length && !isBlankLine(lines[j] as string) && (lines[j] as string).includes("|")) {
-        rows.push(lines[j] as string);
-        j++;
-      }
-      blocks.push(makeBlock({ kind: "table", lines: rows }, j - i));
-      i = j;
-      continue;
-    }
     const quote = matchQuote(line);
     if (quote) {
       const quoted = [quote.text];
@@ -263,21 +236,6 @@ export function splitBlocks(lines: string[]): Block[] {
       i = j;
       continue;
     }
-    const item = matchListItem(line);
-    if (item) {
-      const items = [item.text];
-      let j = i + 1;
-      while (j < lines.length) {
-        const next = matchListItem(lines[j] as string);
-        if (item.ordered && next?.ordered) items.push(next.text);
-        else if (!item.ordered && next && !next.ordered) items.push(next.text);
-        else break;
-        j++;
-      }
-      blocks.push(makeBlock({ kind: "list", lines: items, ordered: item.ordered }, j - i));
-      i = j;
-      continue;
-    }
     const paragraph = [line];
     let j = i + 1;
     while (j < lines.length) {
@@ -287,9 +245,7 @@ export function splitBlocks(lines: string[]): Block[] {
         matchFence(next) !== null ||
         matchHeading(next) !== null ||
         isRuleLine(next) ||
-        matchQuote(next) !== null ||
-        matchListItem(next) !== null ||
-        (next.includes("|") && j + 1 < lines.length && isTableDelimiter(lines[j + 1] as string))
+        matchQuote(next) !== null
       ) {
         break;
       }

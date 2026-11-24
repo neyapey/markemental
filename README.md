@@ -9,6 +9,7 @@ Two pipelines cover the GFM/CommonMark flavors, and the environment is implicit:
 ## Features
 
 - Streaming input: `push()` chunks as they arrive, `flush()` the remainder.
+- Incremental commit: tables render row-by-row from the delimiter row on, and lists item-by-item, instead of waiting for the whole block.
 - Blocks: headings, paragraphs, fenced code, bullet and ordered lists, blockquotes, thematic breaks.
 - Inlines: emphasis, strong, inline code, links, images, autolinks, escapes, hard breaks.
 - GFM extras: tables (with column alignment) and strikethrough; CommonMark pipelines degrade tables to paragraphs.
@@ -68,7 +69,7 @@ Pick a pipeline by flavor:
 | `createGFMPipeline` | GFM |
 | `createCommonMarkPipeline` | CommonMark |
 
-The trailing partial block is held back until more input completes it or `flush()` runs. Pushing after `flush()` throws. See the TSDoc on each factory for details.
+The trailing partial block is held back until more input completes it or `flush()` runs. Tables commit once the delimiter row arrives and lists commit per item, so large blocks render progressively. Pushing after `flush()` throws. See the TSDoc on each factory for details.
 
 ## Custom renderers
 
@@ -86,7 +87,7 @@ The pipeline splits pushed chunks into lines and feeds them to the renderer one 
 
 ## MVP limitations
 
-Single-line list items, flat lists, single-paragraph quotes, and same-line code spans. No task lists, bare-URL autolinking, footnotes, or raw HTML passthrough yet.
+Single-line list items with basic indented nesting, single-paragraph quotes, and same-line code spans. No task lists, lazy list continuation, bare-URL autolinking, footnotes, or raw HTML passthrough yet.
 
 ## Development
 

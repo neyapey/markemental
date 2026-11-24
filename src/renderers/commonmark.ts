@@ -2,8 +2,16 @@ import { Block } from "../core/types/block";
 import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
 import { RenderTarget } from "../core/types/target";
-import { RendererState } from "./renderer-state";
+import { RendererState, type ParseFragment } from "./renderer-state";
 import { appendInline } from "./util/inline";
+
+/** An open list waiting for more items (possibly nested). */
+interface OpenListFrame {
+  /** Committed list element items append to. */
+  node: DOMNodeLike;
+  /** Latest item; nested lists open inside it. Null until the first item. */
+  currentItem: DOMNodeLike | null;
+}
 
 /**
  * Renderer for CommonMark.
@@ -12,7 +20,9 @@ import { appendInline } from "./util/inline";
  * Constructed with its target, document, and options. Feed it lines with
  * {@link CommonMarkRenderer.writeLine}; it holds its own parse state and
  * writes finished blocks to the target as they complete. An optional
- * `sanitizer` post-processes every rendered block node.
+ * `sanitizer` post-processes every committed node. Open lists are tracked
+ * on a commit stack so items — including nested ones — append to the right
+ * container as they arrive.
  *
  * @public
  */
@@ -20,8 +30,10 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   /** Rendering options. */
   readonly options: CommonMarkRenderOptions;
   private _target: RenderTarget;
-  private _doc: DOMDocumentLike;
-  private _state = new RendererState();
+  protected _doc: DOMDocumentLike;
+  private _state: RendererState;
+  private _open: OpenListFrame[] = [];
+  private _tableLines: string[] | null = null;
 
   /**
    * @param target - Destination for rendered output, from
@@ -34,16 +46,16 @@ export class CommonMarkRenderer implements MarkdownRenderer {
     this._target = target;
     this._doc = doc;
     this.options = opts;
+    this._state = new RendererState((fragment) => this._applyFragment(fragment));
   }
 
   /**
-   * Feed one source line; completed blocks are written to the target.
+   * Feed one source line; completed output is written to the target.
    *
    * @param line - Next source line, without its line break.
    */
   writeLine(line: string): void {
-    this._state.addLines([line]);
-    this._drain(this._state.takeCompleteBlocks());
+    this._state.addLine(line);
   }
 
   /**
@@ -52,17 +64,89 @@ export class CommonMarkRenderer implements MarkdownRenderer {
    * @returns A promise that resolves once all output has landed in the target.
    */
   async flush(): Promise<void> {
-    this._drain(this._state.takeAllBlocks());
+    this._state.flush();
     await this._target.flush();
   }
 
-  private _drain(blocks: Block[]): void {
-    const sanitizer = this.options.sanitizer;
-    for (const block of blocks) {
-      const node = this.renderBlock(block, this._doc);
-      if (node === null) continue;
-      this._target.append(sanitizer === undefined ? node : sanitizer(node));
+  private _applyFragment(fragment: ParseFragment): void {
+    switch (fragment.kind) {
+      case "block": {
+        const node = this.renderBlock(fragment.block, this._doc);
+        if (node !== null) this._commit(node, null);
+        break;
+      }
+      case "tableHead":
+        this._applyTableHead(fragment.headLine, fragment.delimLine);
+        break;
+      case "tableRow":
+        this._applyTableRow(fragment.line);
+        break;
+      case "tableEnd":
+        this._applyTableEnd();
+        break;
+      case "listStart": {
+        const top = this._open[this._open.length - 1];
+        const list = this._doc.createElement(fragment.ordered ? "ol" : "ul");
+        this._commit(list, top?.currentItem ?? null);
+        this._open.push({ node: list, currentItem: null });
+        break;
+      }
+      case "listItem": {
+        const top = this._open[this._open.length - 1] as OpenListFrame;
+        const item = this._doc.createElement("li");
+        appendInline(item, fragment.text, this._doc, this.inlineGfm());
+        this._commit(item, top.node);
+        top.currentItem = item;
+        break;
+      }
+      case "listEnd":
+        this._open.pop();
+        break;
     }
+  }
+
+  /**
+   * Append a node to the target (top level) or to its parent container,
+   * running the sanitizer first when one is set.
+   *
+   * @param node - Node to commit.
+   * @param parent - Parent container, or null to commit to the target.
+   */
+  protected _commit(node: DOMNodeLike, parent: DOMNodeLike | null): void {
+    const sanitizer = this.options.sanitizer;
+    const out = sanitizer === undefined ? node : sanitizer(node);
+    if (parent === null) this._target.append(out);
+    else parent.appendChild(out);
+  }
+
+  /**
+   * Buffer a table header; CommonMark degrades tables to a paragraph once
+   * the table ends. Overridden by {@link GFMRenderer}.
+   *
+   * @param headLine - Raw header row line.
+   * @param _delimLine - Delimiter row line, skipped by the degradation.
+   */
+  protected _applyTableHead(headLine: string, _delimLine: string): void {
+    this._tableLines = [headLine];
+  }
+
+  /**
+   * Buffer a table body row line. Overridden by {@link GFMRenderer}.
+   *
+   * @param line - Raw body row line.
+   */
+  protected _applyTableRow(line: string): void {
+    this._tableLines?.push(line);
+  }
+
+  /**
+   * Render buffered table lines as a paragraph. Overridden by
+   * {@link GFMRenderer}.
+   */
+  protected _applyTableEnd(): void {
+    const lines = this._tableLines ?? [];
+    this._tableLines = null;
+    this._commit(this.renderParagraph(lines, this._doc), null);
   }
 
   /**
@@ -100,15 +184,6 @@ export class CommonMarkRenderer implements MarkdownRenderer {
         pre.appendChild(code);
         return pre;
       }
-      case "list": {
-        const list = doc.createElement(block.ordered ? "ol" : "ul");
-        for (const item of block.lines) {
-          const li = doc.createElement("li");
-          appendInline(li, item, doc, this.inlineGfm());
-          list.appendChild(li);
-        }
-        return list;
-      }
       case "quote": {
         const quote = doc.createElement("blockquote");
         const body = doc.createElement("p");
@@ -118,10 +193,6 @@ export class CommonMarkRenderer implements MarkdownRenderer {
       }
       case "rule":
         return doc.createElement("hr");
-      case "table":
-        // CommonMark has no tables: degrade to a paragraph, skipping the
-        // delimiter row.
-        return this.renderParagraph(block.lines.filter((_, at) => at !== 1), doc);
     }
   }
 
@@ -154,9 +225,13 @@ export class CommonMarkRenderer implements MarkdownRenderer {
 }
 
 /**
- * Sanitizes one rendered block node.
+ * Sanitizes one node committed to the target.
  *
- * @param node - Rendered block node.
+ * @remarks
+ * Applied to every node as it commits: leaf blocks whole, tables and lists
+ * piece by piece (container first, then rows and items).
+ *
+ * @param node - Node being committed.
  * @returns The node to append to the target.
  *
  * @public
@@ -170,7 +245,8 @@ export type BlockSanitizer = (node: DOMNodeLike) => DOMNodeLike;
  */
 export type CommonMarkRenderOptions = {
   /**
-   * Optional post-render sanitizer applied to every rendered block node.
+   * Optional post-render sanitizer applied to every node committed to the
+   * target.
    *
    * @remarks
    * Intended for HTML safety once raw HTML detection and parsing lands
