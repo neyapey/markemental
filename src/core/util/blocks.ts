@@ -7,6 +7,7 @@ const QUOTE_RE = /^>\s?(.*)$/;
 const BULLET_RE = /^\s*[-*+]\s+(.*)$/;
 const ORDERED_RE = /^\s*\d+[.)]\s+(.*)$/;
 const TABLE_DELIM_CELL_RE = /^:?-{1,}:?$/;
+const LEADING_WS_RE = /^\s*/;
 
 /**
  * Whether a line is blank (a pure block separator carrying no content).
@@ -18,11 +19,159 @@ export function isBlankLine(line: string): boolean {
   return line.trim() === "";
 }
 
-function isBlank(line: string): boolean {
-  return isBlankLine(line);
+/**
+ * An opening or closing fence marker found on one line.
+ */
+export interface FenceMatch {
+  /** Fence character: backtick or tilde. */
+  marker: string;
+  /** Length of the marker run (three or more). */
+  length: number;
+  /** Info string after the marker, when present. */
+  language: string | undefined;
 }
 
-function isTableDelimiter(line: string): boolean {
+/**
+ * Match a fence marker line.
+ *
+ * @param line - Source line to test.
+ * @returns The marker, or null when the line is not a fence marker.
+ */
+export function matchFence(line: string): FenceMatch | null {
+  const match = FENCE_RE.exec(line.trim());
+  if (!match || !match[1]) return null;
+  const run = match[1];
+  return {
+    marker: run[0] as string,
+    length: run.length,
+    language: (match[2] ?? "").trim() || undefined,
+  };
+}
+
+/**
+ * Whether a line closes an open fence.
+ *
+ * @param open - Marker that opened the fence.
+ * @param line - Source line to test.
+ * @returns True for a same-character run at least as long.
+ */
+export function fenceCloses(open: { marker: string; length: number }, line: string): boolean {
+  const match = matchFence(line);
+  return match !== null && match.marker === open.marker && match.length >= open.length;
+}
+
+/**
+ * An ATX heading found on one line.
+ */
+export interface HeadingMatch {
+  /** Heading level (1-6). */
+  level: number;
+  /** Heading text with closing hashes stripped. */
+  text: string;
+}
+
+/**
+ * Match an ATX heading line.
+ *
+ * @param line - Source line to test.
+ * @returns The heading, or null for non-heading lines.
+ */
+export function matchHeading(line: string): HeadingMatch | null {
+  const match = HEADING_RE.exec(line);
+  if (!match || !match[1]) return null;
+  return {
+    level: Math.min(6, match[1].length),
+    text: (match[2] ?? "").replace(/\s+#+\s*$/, "").trim(),
+  };
+}
+
+/**
+ * Whether a line is a thematic break.
+ *
+ * @param line - Source line to test.
+ * @returns True for `***`, `---`, `___` style lines.
+ */
+export function isRuleLine(line: string): boolean {
+  return RULE_RE.test(line.trim());
+}
+
+/**
+ * A quote line with its marker stripped.
+ */
+export interface QuoteMatch {
+  /** Line content after the `>` marker. */
+  text: string;
+}
+
+/**
+ * Match a quote line.
+ *
+ * @param line - Source line to test.
+ * @returns The content, or null for non-quote lines.
+ */
+export function matchQuote(line: string): QuoteMatch | null {
+  const match = QUOTE_RE.exec(line);
+  if (!match) return null;
+  return { text: match[1] ?? "" };
+}
+
+/**
+ * A list item marker found on one line.
+ */
+export interface ListItemMatch {
+  /** Whether the marker is ordered (`1.` / `1)`). */
+  ordered: boolean;
+  /** Number of leading whitespace characters. */
+  indent: number;
+  /** Item text after the marker. */
+  text: string;
+}
+
+/**
+ * Match a bullet or ordered list item line.
+ *
+ * @param line - Source line to test.
+ * @returns The item, or null for non-item lines.
+ */
+export function matchListItem(line: string): ListItemMatch | null {
+  const bullet = BULLET_RE.exec(line);
+  const ordered = ORDERED_RE.exec(line);
+  if (!bullet && !ordered) return null;
+  return {
+    ordered: !bullet,
+    indent: LEADING_WS_RE.exec(line)?.[0].length ?? 0,
+    text: bullet?.[1] ?? ordered?.[1] ?? "",
+  };
+}
+
+/**
+ * Whether a line continues a bullet list (a bullet marker that is not also
+ * ordered-looking).
+ *
+ * @param line - Source line to test.
+ * @returns True for bullet continuations.
+ */
+export function isBulletItem(line: string): boolean {
+  return BULLET_RE.test(line) && !ORDERED_RE.test(line);
+}
+
+/**
+ * Whether a line continues an ordered list.
+ *
+ * @param line - Source line to test.
+ * @returns True for ordered markers.
+ */
+export function isOrderedItem(line: string): boolean {
+  return ORDERED_RE.test(line);
+}
+
+/**
+ * Whether a line is a table delimiter row.
+ *
+ * @param line - Source line to test.
+ * @returns True for `|---|...` style rows.
+ */
+export function isTableDelimiter(line: string): boolean {
   if (!line.includes("|") && !line.includes("-")) return false;
   const cells = line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|");
   return cells.length > 0 && cells.every((cell) => TABLE_DELIM_CELL_RE.test(cell.trim()));
@@ -35,21 +184,15 @@ function isTableDelimiter(line: string): boolean {
  * @returns True when a fence opens without a matching close.
  */
 export function hasOpenFence(lines: string[]): boolean {
-  let openChar = "";
-  let openLen = 0;
+  let open: { marker: string; length: number } | null = null;
   for (const line of lines) {
-    const match = FENCE_RE.exec(line.trim());
-    if (!match || !match[1]) continue;
-    const run = match[1];
-    if (openChar === "") {
-      openChar = run[0] as string;
-      openLen = run.length;
-    } else if (run[0] === openChar && run.length >= openLen) {
-      openChar = "";
-      openLen = 0;
+    if (open === null) {
+      open = matchFence(line);
+    } else if (fenceCloses(open, line)) {
+      open = null;
     }
   }
-  return openChar !== "";
+  return open !== null;
 }
 
 function makeBlock(block: Omit<Block, "sourceLineCount">, sourceLineCount: number): Block {
@@ -67,36 +210,30 @@ export function splitBlocks(lines: string[]): Block[] {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i] as string;
-    if (isBlank(line)) {
+    if (isBlankLine(line)) {
       i++;
       continue;
     }
-    const fence = FENCE_RE.exec(line.trim());
-    if (fence && fence[1]) {
-      const run = fence[1];
-      const language = (fence[2] ?? "").trim() || undefined;
+    const fence = matchFence(line);
+    if (fence) {
       const content: string[] = [];
       let j = i + 1;
-      while (j < lines.length) {
-        const inner = lines[j] as string;
-        const close = FENCE_RE.exec(inner.trim());
-        if (close && close[1] && close[1][0] === run[0] && close[1].length >= run.length) break;
-        content.push(inner);
+      while (j < lines.length && !fenceCloses(fence, lines[j] as string)) {
+        content.push(lines[j] as string);
         j++;
       }
       const closed = j < lines.length;
-      blocks.push(makeBlock({ kind: "fence", lines: content, language }, j - i + (closed ? 1 : 0)));
+      blocks.push(makeBlock({ kind: "fence", lines: content, language: fence.language }, j - i + (closed ? 1 : 0)));
       i = j + (closed ? 1 : 0);
       continue;
     }
-    const heading = HEADING_RE.exec(line);
-    if (heading && heading[1]) {
-      const text = (heading[2] ?? "").replace(/\s+#+\s*$/, "").trim();
-      blocks.push(makeBlock({ kind: "heading", lines: [text], level: Math.min(6, heading[1].length) }, 1));
+    const heading = matchHeading(line);
+    if (heading) {
+      blocks.push(makeBlock({ kind: "heading", lines: [heading.text], level: heading.level }, 1));
       i++;
       continue;
     }
-    if (RULE_RE.test(line.trim())) {
+    if (isRuleLine(line)) {
       blocks.push(makeBlock({ kind: "rule", lines: [] }, 1));
       i++;
       continue;
@@ -104,7 +241,7 @@ export function splitBlocks(lines: string[]): Block[] {
     if (line.includes("|") && i + 1 < lines.length && isTableDelimiter(lines[i + 1] as string)) {
       const rows = [line, lines[i + 1] as string];
       let j = i + 2;
-      while (j < lines.length && !(isBlank(lines[j] as string)) && (lines[j] as string).includes("|")) {
+      while (j < lines.length && !isBlankLine(lines[j] as string) && (lines[j] as string).includes("|")) {
         rows.push(lines[j] as string);
         j++;
       }
@@ -112,35 +249,32 @@ export function splitBlocks(lines: string[]): Block[] {
       i = j;
       continue;
     }
-    const quote = QUOTE_RE.exec(line);
+    const quote = matchQuote(line);
     if (quote) {
-      const quoted = [quote[1] ?? ""];
+      const quoted = [quote.text];
       let j = i + 1;
       while (j < lines.length) {
-        const next = QUOTE_RE.exec(lines[j] as string);
+        const next = matchQuote(lines[j] as string);
         if (!next) break;
-        quoted.push(next[1] ?? "");
+        quoted.push(next.text);
         j++;
       }
       blocks.push(makeBlock({ kind: "quote", lines: quoted }, j - i));
       i = j;
       continue;
     }
-    const bullet = BULLET_RE.exec(line);
-    const ordered = ORDERED_RE.exec(line);
-    if (bullet || ordered) {
-      const isOrdered = !bullet;
-      const items = [(bullet?.[1] ?? ordered?.[1] ?? "")];
+    const item = matchListItem(line);
+    if (item) {
+      const items = [item.text];
       let j = i + 1;
       while (j < lines.length) {
-        const nextBullet = BULLET_RE.exec(lines[j] as string);
-        const nextOrdered = ORDERED_RE.exec(lines[j] as string);
-        if (isOrdered && nextOrdered) items.push(nextOrdered[1] ?? "");
-        else if (!isOrdered && nextBullet && !ORDERED_RE.test(lines[j] as string)) items.push(nextBullet[1] ?? "");
+        const next = matchListItem(lines[j] as string);
+        if (item.ordered && next?.ordered) items.push(next.text);
+        else if (!item.ordered && next && !next.ordered) items.push(next.text);
         else break;
         j++;
       }
-      blocks.push(makeBlock({ kind: "list", lines: items, ordered: isOrdered }, j - i));
+      blocks.push(makeBlock({ kind: "list", lines: items, ordered: item.ordered }, j - i));
       i = j;
       continue;
     }
@@ -149,13 +283,12 @@ export function splitBlocks(lines: string[]): Block[] {
     while (j < lines.length) {
       const next = lines[j] as string;
       if (
-        isBlank(next) ||
-        FENCE_RE.test(next.trim()) ||
-        HEADING_RE.test(next) ||
-        RULE_RE.test(next.trim()) ||
-        QUOTE_RE.test(next) ||
-        BULLET_RE.test(next) ||
-        ORDERED_RE.test(next) ||
+        isBlankLine(next) ||
+        matchFence(next) !== null ||
+        matchHeading(next) !== null ||
+        isRuleLine(next) ||
+        matchQuote(next) !== null ||
+        matchListItem(next) !== null ||
         (next.includes("|") && j + 1 < lines.length && isTableDelimiter(lines[j + 1] as string))
       ) {
         break;
