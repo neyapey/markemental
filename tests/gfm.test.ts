@@ -54,13 +54,12 @@ describe("gfm strikethrough", () => {
 });
 
 describe("gfm graceful degradation", () => {
-  it("renders tables as paragraphs under CommonMark", async () => {
+  it("renders table syntax as a literal paragraph under CommonMark", async () => {
     const { document, target, html } = makeTestDom();
     const pipeline = createCommonMarkPipeline(target, document, {});
     await pipeline.push("| a | b |\n|---|---|\n| 1 | 2 |\n");
     await pipeline.flush();
-    expect(html()).not.toContain("<table");
-    expect(html().startsWith("<p>")).toBe(true);
+    expect(html()).toBe("<p>| a | b | |---|---| | 1 | 2 |</p>");
   });
 
   it("keeps CommonMark blocks working under GFM", async () => {

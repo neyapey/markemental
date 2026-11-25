@@ -2,7 +2,7 @@ import { Block } from "../core/types/block";
 import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
 import { RenderTarget } from "../core/types/target";
-import { RendererState, type ParseFragment } from "./renderer-state";
+import { CommonMarkState, type ParseFragment } from "./renderer-state";
 import { appendInline } from "./parser/inline";
 
 /** An open list waiting for more items (possibly nested). */
@@ -31,9 +31,8 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   readonly options: CommonMarkRenderOptions;
   private _target: RenderTarget;
   protected _doc: DOMDocumentLike;
-  private _state: RendererState;
+  private _state: CommonMarkState;
   private _open: OpenListFrame[] = [];
-  private _tableLines: string[] | null = null;
 
   /**
    * @param target - Destination for rendered output, from
@@ -46,7 +45,18 @@ export class CommonMarkRenderer implements MarkdownRenderer {
     this._target = target;
     this._doc = doc;
     this.options = opts;
-    this._state = new RendererState((fragment) => this._applyFragment(fragment));
+    this._state = this._createState((fragment) => this._applyFragment(fragment));
+  }
+
+  /**
+   * Create the parser state. Overridden by {@link GFMRenderer} to parse
+   * tables.
+   *
+   * @param emit - Receives parse fragments in document order.
+   * @returns The state for this renderer.
+   */
+  protected _createState(emit: (fragment: ParseFragment) => void): CommonMarkState {
+    return new CommonMarkState(emit);
   }
 
   /**
@@ -68,22 +78,13 @@ export class CommonMarkRenderer implements MarkdownRenderer {
     await this._target.flush();
   }
 
-  private _applyFragment(fragment: ParseFragment): void {
+  protected _applyFragment(fragment: ParseFragment): void {
     switch (fragment.kind) {
       case "block": {
         const node = this.renderBlock(fragment.block, this._doc);
         if (node !== null) this._commit(node, null);
         break;
       }
-      case "tableHead":
-        this._applyTableHead(fragment.headLine, fragment.delimLine);
-        break;
-      case "tableRow":
-        this._applyTableRow(fragment.line);
-        break;
-      case "tableEnd":
-        this._applyTableEnd();
-        break;
       case "listStart": {
         const top = this._open[this._open.length - 1];
         const list = this._doc.createElement(fragment.ordered ? "ol" : "ul");
@@ -102,6 +103,10 @@ export class CommonMarkRenderer implements MarkdownRenderer {
       case "listEnd":
         this._open.pop();
         break;
+      default:
+        // Table fragments never reach CommonMark: CommonMarkState never
+        // emits them.
+        break;
     }
   }
 
@@ -117,36 +122,6 @@ export class CommonMarkRenderer implements MarkdownRenderer {
     const out = sanitizer === undefined ? node : sanitizer(node);
     if (parent === null) this._target.append(out);
     else parent.appendChild(out);
-  }
-
-  /**
-   * Buffer a table header; CommonMark degrades tables to a paragraph once
-   * the table ends. Overridden by {@link GFMRenderer}.
-   *
-   * @param headLine - Raw header row line.
-   * @param _delimLine - Delimiter row line, skipped by the degradation.
-   */
-  protected _applyTableHead(headLine: string, _delimLine: string): void {
-    this._tableLines = [headLine];
-  }
-
-  /**
-   * Buffer a table body row line. Overridden by {@link GFMRenderer}.
-   *
-   * @param line - Raw body row line.
-   */
-  protected _applyTableRow(line: string): void {
-    this._tableLines?.push(line);
-  }
-
-  /**
-   * Render buffered table lines as a paragraph. Overridden by
-   * {@link GFMRenderer}.
-   */
-  protected _applyTableEnd(): void {
-    const lines = this._tableLines ?? [];
-    this._tableLines = null;
-    this._commit(this.renderParagraph(lines, this._doc), null);
   }
 
   /**

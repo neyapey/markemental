@@ -3,6 +3,7 @@ import { MarkdownRenderer } from "../core/types/renderer";
 import { RenderTarget } from "../core/types/target";
 import { CommonMarkRenderer, CommonMarkRenderOptions } from "./commonmark";
 import { appendInline } from "./parser/inline";
+import { GFMState, type ParseFragment } from "./renderer-state";
 
 type Alignment = "left" | "center" | "right" | null;
 
@@ -62,12 +63,44 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
   }
 
   /**
+   * Create the GFM parser state.
+   *
+   * @param emit - Receives parse fragments in document order.
+   * @returns The state for this renderer.
+   */
+  protected override _createState(emit: (fragment: ParseFragment) => void): GFMState {
+    return new GFMState(emit);
+  }
+
+  /**
+   * Apply a fragment, handling tables here and delegating the rest.
+   *
+   * @param fragment - Fragment to apply.
+   */
+  protected override _applyFragment(fragment: ParseFragment): void {
+    switch (fragment.kind) {
+      case "tableHead":
+        this._applyTableHead(fragment.headLine, fragment.delimLine);
+        break;
+      case "tableRow":
+        this._applyTableRow(fragment.line);
+        break;
+      case "tableEnd":
+        this._applyTableEnd();
+        break;
+      default:
+        super._applyFragment(fragment);
+        break;
+    }
+  }
+
+  /**
    * Commit the table with its header; body rows stream in afterwards.
    *
    * @param headLine - Raw header row line.
    * @param delimLine - Delimiter row line carrying column alignment.
    */
-  protected override _applyTableHead(headLine: string, delimLine: string): void {
+  protected _applyTableHead(headLine: string, delimLine: string): void {
     const header = splitRow(headLine);
     const aligns = splitRow(delimLine).map(parseAlignment);
     const width = header.length;
@@ -94,7 +127,7 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
    *
    * @param line - Raw body row line.
    */
-  protected override _applyTableRow(line: string): void {
+  protected _applyTableRow(line: string): void {
     const table = this._table;
     if (table === null) return;
     const cells = splitRow(line);
@@ -117,7 +150,7 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
   /**
    * Close the open table.
    */
-  protected override _applyTableEnd(): void {
+  protected _applyTableEnd(): void {
     this._table = null;
   }
 }

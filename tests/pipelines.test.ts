@@ -102,13 +102,15 @@ describe("incremental tables", () => {
     expect(html()).toContain("<p>after</p>");
   });
 
-  it("buffers tables under CommonMark until the table ends", async () => {
+  it("treats table syntax as plain paragraph text under CommonMark", async () => {
     const { document, target, html } = makeTestDom();
     const pipeline = createCommonMarkPipeline(target, document, {});
     await pipeline.push("| a | b |\n|---|---|\n| 1 | 2 |\n");
     expect(html()).toBe("");
+    await pipeline.push("\ntail\n");
+    expect(html()).toBe("<p>| a | b | |---|---| | 1 | 2 |</p>");
     await pipeline.flush();
-    expect(html()).toBe("<p>| a | b | | 1 | 2 |</p>");
+    expect(html()).toBe("<p>| a | b | |---|---| | 1 | 2 |</p><p>tail</p>");
   });
 
   it("streams table rows across animation frames", async () => {

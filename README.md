@@ -12,7 +12,7 @@ Two pipelines cover the GFM/CommonMark flavors, and the environment is implicit:
 - Incremental commit: tables render row-by-row from the delimiter row on, and lists item-by-item, instead of waiting for the whole block.
 - Blocks: headings, paragraphs, fenced code, bullet and ordered lists, blockquotes, thematic breaks.
 - Inlines: emphasis, strong, inline code, links, images, autolinks, escapes, hard breaks.
-- GFM extras: tables (with column alignment) and strikethrough; CommonMark pipelines degrade tables to paragraphs.
+- GFM extras: tables (with column alignment) and strikethrough; CommonMark has no tables, so table syntax renders as plain paragraph text.
 - Pipelines batch DOM writes on `requestAnimationFrame` when given a scheduler.
 
 ## Install
