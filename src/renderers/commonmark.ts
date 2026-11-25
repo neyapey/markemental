@@ -3,7 +3,7 @@ import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
 import { RenderTarget } from "../core/types/target";
 import { RendererState, type ParseFragment } from "./renderer-state";
-import { appendInline } from "./util/inline";
+import { appendInline } from "./parser/inline";
 
 /** An open list waiting for more items (possibly nested). */
 interface OpenListFrame {
@@ -250,7 +250,7 @@ export type CommonMarkRenderOptions = {
    *
    * @remarks
    * Intended for HTML safety once raw HTML detection and parsing lands
-   * (see the TODO in `util/inline`).
+   * (see the TODO in `parser/inline`).
    */
   sanitizer?: BlockSanitizer;
 };

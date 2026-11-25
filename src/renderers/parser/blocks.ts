@@ -1,4 +1,4 @@
-import { Block } from "../types/block";
+import { Block } from "../../core/types/block";
 
 const HEADING_RE = /^(#{1,6})(?:\s+(.*))?\s*$/;
 const RULE_RE = /^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$/;

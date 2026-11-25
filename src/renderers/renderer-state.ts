@@ -11,7 +11,7 @@ import {
   matchQuote,
   splitBlocks,
   type ListItemMatch,
-} from "../core/util/blocks";
+} from "./parser/blocks";
 
 /**
  * Structural piece of the document emitted as lines are parsed.

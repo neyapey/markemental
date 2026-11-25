@@ -2,7 +2,7 @@ import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
 import { RenderTarget } from "../core/types/target";
 import { CommonMarkRenderer, CommonMarkRenderOptions } from "./commonmark";
-import { appendInline } from "./util/inline";
+import { appendInline } from "./parser/inline";
 
 type Alignment = "left" | "center" | "right" | null;
 
