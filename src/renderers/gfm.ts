@@ -4,26 +4,7 @@ import { RenderTarget } from "../core/types/target";
 import { CommonMarkRenderer, CommonMarkRenderOptions } from "./commonmark";
 import { appendInline } from "./parser/inline";
 import { GFMState, type ParseFragment } from "./renderer-state";
-
-type Alignment = "left" | "center" | "right" | null;
-
-function splitRow(line: string): string[] {
-  return line
-    .trim()
-    .replace(/^\|/, "")
-    .replace(/\|$/, "")
-    .split("|")
-    .map((cell) => cell.trim());
-}
-
-function parseAlignment(cell: string): Alignment {
-  const left = cell.startsWith(":");
-  const right = cell.endsWith(":");
-  if (left && right) return "center";
-  if (right) return "right";
-  if (left) return "left";
-  return null;
-}
+import { parseTableAlignment, splitTableRow, type TableAlignment } from "./parser/blocks";
 
 /**
  * Renderer for GitHub Flavored Markdown.
@@ -39,7 +20,7 @@ function parseAlignment(cell: string): Alignment {
 export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer {
   /** Rendering options. */
   readonly options: GFMRenderOptions;
-  private _table: { body: DOMNodeLike; aligns: Array<Alignment | null>; width: number } | null = null;
+  private _table: { body: DOMNodeLike; aligns: Array<TableAlignment | null>; width: number } | null = null;
 
   /**
    * @param target - Destination for rendered output, from
@@ -101,8 +82,8 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
    * @param delimLine - Delimiter row line carrying column alignment.
    */
   protected _applyTableHead(headLine: string, delimLine: string): void {
-    const header = splitRow(headLine);
-    const aligns = splitRow(delimLine).map(parseAlignment);
+    const header = splitTableRow(headLine);
+    const aligns = splitTableRow(delimLine).map(parseTableAlignment);
     const width = header.length;
     const table = this._doc.createElement("table");
     const head = this._doc.createElement("thead");
@@ -130,7 +111,7 @@ export class GFMRenderer extends CommonMarkRenderer implements MarkdownRenderer 
   protected _applyTableRow(line: string): void {
     const table = this._table;
     if (table === null) return;
-    const cells = splitRow(line);
+    const cells = splitTableRow(line);
     const row = this._doc.createElement("tr");
     for (let col = 0; col < table.width; col++) {
       const cell = this._doc.createElement("td");

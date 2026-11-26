@@ -257,3 +257,38 @@ export function splitBlocks(lines: string[]): Block[] {
   }
   return blocks;
 }
+
+/**
+ * Horizontal alignment parsed from a table delimiter cell.
+ */
+export type TableAlignment = "left" | "center" | "right" | null;
+
+/**
+ * Split a table row line into trimmed cells.
+ *
+ * @param line - Raw row line, with or without outer pipes.
+ * @returns Cells in order.
+ */
+export function splitTableRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+/**
+ * Parse column alignment from a delimiter cell.
+ *
+ * @param cell - Raw delimiter cell (dashes with optional edge colons).
+ * @returns The alignment, or null for none.
+ */
+export function parseTableAlignment(cell: string): TableAlignment {
+  const left = cell.startsWith(":");
+  const right = cell.endsWith(":");
+  if (left && right) return "center";
+  if (right) return "right";
+  if (left) return "left";
+  return null;
+}

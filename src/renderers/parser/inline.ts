@@ -162,3 +162,14 @@ export function appendInline(parent: DOMNodeLike, text: string, doc: DOMDocument
   }
   flushLiteral();
 }
+
+/**
+ * Split a paragraph line into text plus a trailing hard break marker.
+ *
+ * @param line - Raw paragraph line.
+ * @returns Text without the break marker, and whether one was present.
+ */
+export function splitHardBreak(line: string): { text: string; hardBreak: boolean } {
+  const hardBreak = / {2,}$/.test(line);
+  return { text: hardBreak ? line.replace(/ {2,}$/, "") : line, hardBreak };
+}

@@ -3,7 +3,7 @@ import { DOMDocumentLike, DOMNodeLike } from "../core/types/dom-like";
 import { MarkdownRenderer } from "../core/types/renderer";
 import { RenderTarget } from "../core/types/target";
 import { CommonMarkState, type ParseFragment } from "./renderer-state";
-import { appendInline } from "./parser/inline";
+import { appendInline, splitHardBreak } from "./parser/inline";
 
 /** An open list waiting for more items (possibly nested). */
 interface OpenListFrame {
@@ -49,7 +49,7 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   }
 
   /**
-   * Create the parser state. Overridden by {@link GFMRenderer} to parse
+   * Create the parser state. Overridden by `GFMRenderer` to parse
    * tables.
    *
    * @param emit - Receives parse fragments in document order.
@@ -126,7 +126,7 @@ export class CommonMarkRenderer implements MarkdownRenderer {
 
   /**
    * Whether GFM-only inlines are enabled. Always false here; overridden by
-   * {@link GFMRenderer}.
+   * `GFMRenderer`.
    *
    * @returns False.
    */
@@ -181,8 +181,8 @@ export class CommonMarkRenderer implements MarkdownRenderer {
   protected renderParagraph(lines: string[], doc: DOMDocumentLike): DOMNodeLike {
     const paragraph = doc.createElement("p");
     lines.forEach((line, at) => {
-      const hardBreak = / {2,}$/.test(line);
-      appendInline(paragraph, hardBreak ? line.replace(/ {2,}$/, "") : line, doc, this.inlineGfm());
+      const { text, hardBreak } = splitHardBreak(line);
+      appendInline(paragraph, text, doc, this.inlineGfm());
       if (at < lines.length - 1) {
         if (hardBreak) paragraph.appendChild(doc.createElement("br"));
         else paragraph.appendChild(doc.createTextNode(" "));
