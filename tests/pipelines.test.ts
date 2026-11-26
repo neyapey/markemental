@@ -148,6 +148,14 @@ describe("incremental lists", () => {
     await pipeline.flush();
     expect(html()).toBe("<ul><li>a</li></ul><ul><li>b</li></ul>");
   });
+
+  it("closes nested lists on a blank line", async () => {
+    const { document, target, html } = makeTestDom();
+    const pipeline = createGFMPipeline(target, document, {});
+    await pipeline.push("- a\n  - b\n\n- c\n");
+    await pipeline.flush();
+    expect(html()).toBe("<ul><li>a<ul><li>b</li></ul></li></ul><ul><li>c</li></ul>");
+  });
 });
 
 describe("nested lists", () => {

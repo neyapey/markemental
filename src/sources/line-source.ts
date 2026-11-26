@@ -4,7 +4,7 @@ import { LineSource } from "../core/types/source";
  * Create a line source that splits pushed chunks into lines.
  *
  * @remarks
- * Internal helper used by the pipeline engine.
+ * Internal helper used by `createMarkdownPipeline`.
  *
  * @returns A new line source.
  *

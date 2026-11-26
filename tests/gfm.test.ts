@@ -32,6 +32,11 @@ describe("gfm tables", () => {
     expect(out).toContain("<td>1</td><td></td>");
   });
 
+  it("keeps extra cells on rows wider than the header", async () => {
+    const out = await renderGfm("| a |\n|---|\n| 1 | 2 |\n");
+    expect(out).toContain("<tr><td>1</td><td>2</td></tr>");
+  });
+
   it("parses inlines inside cells", async () => {
     const out = await renderGfm("| **h** |\n|---|\n| `c` |\n");
     expect(out).toContain("<th><strong>h</strong></th>");
